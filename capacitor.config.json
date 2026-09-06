@@ -4,6 +4,7 @@
   "webDir": "frontend",
   "server": {
     "androidScheme": "http",
+    "iosScheme": "http",
     "cleartext": true,
     "allowNavigation": ["*"]
   }
