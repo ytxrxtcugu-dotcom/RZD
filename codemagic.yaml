@@ -7,10 +7,10 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
-          npm install @capacitor/ios
+          chmod +x node_modules/.bin/cap
       - name: Sync Capacitor
         script: |
-          npx cap sync ios
+          ./node_modules/.bin/cap sync ios
       - name: Build iOS
         script: |
           cd ios/App
