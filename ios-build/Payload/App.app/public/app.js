@@ -16,12 +16,13 @@ const surveyFactors = [
     "Информирование сотрудников"
 ];
 
-// Класс для управления приложением
 class SurveyApp {
     constructor() {
         this.ratings = {};
         this.currentUser = null;
-        this.surveyCompleted = false;
+        this.currentPath = [];
+        this.selectedDepartmentPath = [];
+        this.selectedDepartment = null;
         this.init();
     }
 
@@ -76,8 +77,11 @@ class SurveyApp {
                     </div>
                     
                     <div class="form-group">
-                        <label for="department">Наименование предприятия:</label>
-                        <input type="text" id="department" placeholder="Например: Локомотивное депо «Москва»" required>
+                        <label>Наименование предприятия:</label>
+                        <button type="button" class="btn-select-department" onclick="app.openDepartmentModal()">
+                            <span id="selectedDepartmentText">Выберите подразделение</span>
+                            <span class="btn-select-arrow">▼</span>
+                        </button>
                     </div>
                     
                     <button class="btn" onclick="app.login()">Войти</button>
@@ -90,28 +94,154 @@ class SurveyApp {
         `;
     }
 
+    openDepartmentModal() {
+        const modal = document.createElement('div');
+        modal.className = 'department-modal';
+        modal.id = 'departmentModal';
+        modal.innerHTML = `
+            <div class="department-modal-content">
+                <div class="department-modal-header">
+                    <h3>Выберите подразделение</h3>
+                    <button class="modal-close" onclick="app.closeDepartmentModal()">✕</button>
+                </div>
+                <div class="department-modal-body">
+                    <div class="breadcrumbs" id="breadcrumbs"></div>
+                    <div class="department-list" id="departmentList"></div>
+                </div>
+                <div class="department-modal-footer">
+                    <button class="btn-cancel" onclick="app.closeDepartmentModal()">Отмена</button>
+                    <button class="btn-confirm" onclick="app.confirmDepartment()">Подтвердить</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        this.currentPath = [];
+        this.selectedDepartmentPath = [];
+        this.renderDepartmentLevel();
+    }
+
+    closeDepartmentModal() {
+        const modal = document.getElementById('departmentModal');
+        if (modal) modal.remove();
+    }
+
+    renderDepartmentLevel() {
+        const listContainer = document.getElementById('departmentList');
+        const breadcrumbs = document.getElementById('breadcrumbs');
+        
+        breadcrumbs.innerHTML = '';
+        if (this.currentPath.length > 0) {
+            breadcrumbs.innerHTML = '<span onclick="app.navigateTo(-1)">Главная</span>';
+            this.currentPath.forEach((item, index) => {
+                breadcrumbs.innerHTML += ` → <span onclick="app.navigateTo(${index})">${item}</span>`;
+            });
+        }
+        
+        let data = rzdStructure;
+        for (let i = 0; i < this.currentPath.length; i++) {
+            data = data[this.currentPath[i]];
+        }
+        
+        listContainer.innerHTML = '';
+        
+        if (typeof data === 'object' && !Array.isArray(data)) {
+            Object.keys(data).forEach(key => {
+                const hasChildren = typeof data[key] === 'object' && Object.keys(data[key]).length > 0;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'department-item';
+                
+                if (hasChildren) {
+                    itemDiv.innerHTML = `
+                        <span>${key}</span>
+                        <span class="item-arrow">›</span>
+                    `;
+                    itemDiv.onclick = () => {
+                        this.currentPath.push(key);
+                        this.selectedDepartmentPath = [];
+                        this.renderDepartmentLevel();
+                    };
+                } else {
+                    itemDiv.innerHTML = `
+                        <span>${key}</span>
+                        <button class="item-select">Выбрать</button>
+                    `;
+                    itemDiv.querySelector('.item-select').onclick = (e) => {
+                        e.stopPropagation();
+                        this.selectedDepartmentPath = [...this.currentPath, key];
+                        this.highlightSelected(itemDiv);
+                    };
+                }
+                listContainer.appendChild(itemDiv);
+            });
+        } else if (Array.isArray(data)) {
+            data.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'department-item';
+                itemDiv.innerHTML = `
+                    <span>${item}</span>
+                    <button class="item-select">Выбрать</button>
+                `;
+                itemDiv.querySelector('.item-select').onclick = (e) => {
+                    e.stopPropagation();
+                    this.selectedDepartmentPath = [...this.currentPath, item];
+                    this.highlightSelected(itemDiv);
+                };
+                listContainer.appendChild(itemDiv);
+            });
+        }
+    }
+
+    highlightSelected(element) {
+        document.querySelectorAll('.department-item').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    navigateTo(index) {
+        if (index === -1) {
+            this.currentPath = [];
+        } else {
+            this.currentPath = this.currentPath.slice(0, index + 1);
+        }
+        this.selectedDepartmentPath = [];
+        this.renderDepartmentLevel();
+    }
+
+    confirmDepartment() {
+        if (this.selectedDepartmentPath.length > 0) {
+            const department = this.selectedDepartmentPath[this.selectedDepartmentPath.length - 1];
+            document.getElementById('selectedDepartmentText').textContent = department;
+            this.selectedDepartment = department;
+        }
+        this.closeDepartmentModal();
+    }
+
+    getSelectedDepartment() {
+        return this.selectedDepartment;
+    }
+
     login() {
         const fullName = document.getElementById('fullName').value;
-        const department = document.getElementById('department').value;
+        const department = this.getSelectedDepartment();
         
-        if (!fullName || !department) {
-            alert('Пожалуйста, заполните все поля');
+        if (!fullName) {
+            alert('Пожалуйста, введите ФИО');
+            return;
+        }
+        
+        if (!department) {
+            alert('Пожалуйста, выберите предприятие');
             return;
         }
         
         this.currentUser = { fullName, department };
-        
-        // Сохраняем сессию
         sessionStorage.setItem('userLoggedIn', 'true');
         sessionStorage.setItem('userData', JSON.stringify(this.currentUser));
-        
         this.renderMenu();
     }
 
     renderMenu() {
         const mainContent = document.getElementById('mainContent');
-        
-        // Проверяем, пройден ли опрос
         const surveyCompleted = sessionStorage.getItem('surveyCompleted');
         const isCompleted = surveyCompleted === 'true';
         
@@ -156,6 +286,7 @@ class SurveyApp {
         sessionStorage.removeItem('userLoggedIn');
         sessionStorage.removeItem('userData');
         this.currentUser = null;
+        this.selectedDepartment = null;
         this.renderLoginForm();
     }
 
@@ -172,12 +303,7 @@ class SurveyApp {
                 <div class="factor-item">
                     <div class="factor-name">${index + 1}. ${factor}</div>
                     <div class="rating-container">
-                        <input type="range" 
-                               class="rating-slider" 
-                               min="0" 
-                               max="10" 
-                               value="0" 
-                               step="1"
+                        <input type="range" class="rating-slider" min="0" max="10" value="0" step="1"
                                onchange="app.updateRating(${index}, this.value)"
                                oninput="app.updateRatingDisplay(${index}, this.value)">
                         <span class="rating-value" id="rating-${index}">0</span>
@@ -262,7 +388,7 @@ class SurveyApp {
 
     async saveResults(results) {
         try {
-            const response = await fetch('/api/surveys', {
+            const response = await fetch('http://212.113.99.102:3000/api/surveys', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -273,7 +399,6 @@ class SurveyApp {
             const data = await response.json();
             
             if (data.success) {
-                // Отмечаем опрос как пройденный
                 sessionStorage.setItem('surveyCompleted', 'true');
                 
                 const mainContent = document.getElementById('mainContent');
@@ -298,5 +423,4 @@ class SurveyApp {
     }
 }
 
-// Инициализация приложения
 const app = new SurveyApp();

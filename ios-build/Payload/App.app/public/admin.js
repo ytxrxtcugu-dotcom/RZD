@@ -16,7 +16,6 @@ const surveyFactors = [
     "Информирование сотрудников"
 ];
 
-// Проверка авторизации
 function checkAdminAuth() {
     const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
     if (isLoggedIn !== 'true') {
@@ -26,26 +25,32 @@ function checkAdminAuth() {
     return true;
 }
 
-// Функция выхода из системы
 function logout() {
     sessionStorage.removeItem('adminLoggedIn');
     sessionStorage.removeItem('adminUsername');
+    sessionStorage.removeItem('adminRole');
+    sessionStorage.removeItem('adminPath');
     window.location.href = '/login.html';
 }
 
-// Функция экспорта данных
 function exportData() {
-    fetch('/api/surveys')
+    fetch('http://212.113.99.102:3000/api/surveys')
         .then(response => response.json())
         .then(surveys => {
-            const dataStr = JSON.stringify(surveys, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const role = sessionStorage.getItem('adminRole');
+            const adminPath = JSON.parse(sessionStorage.getItem('adminPath') || '[]');
+            let filteredSurveys = surveys;
             
-            const exportFileDefaultName = 'surveys_export.json';
+            if (role !== 'superadmin' && adminPath.length > 0) {
+                const adminDept = adminPath[adminPath.length - 1];
+                filteredSurveys = surveys.filter(s => s.user.department === adminDept);
+            }
             
+            const dataStr = JSON.stringify(filteredSurveys, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.setAttribute('download', 'surveys_export.json');
             linkElement.click();
         })
         .catch(error => {
@@ -54,7 +59,6 @@ function exportData() {
         });
 }
 
-// Класс для панели администратора
 class AdminPanel {
     constructor() {
         this.surveys = [];
@@ -64,10 +68,11 @@ class AdminPanel {
     }
 
     async init() {
-        // Проверяем авторизацию
         if (!checkAdminAuth()) {
             return;
         }
+        
+        this.displayAdminInfo();
         
         await this.loadSurveys();
         this.renderMetrics();
@@ -76,10 +81,46 @@ class AdminPanel {
         this.renderCharts();
     }
 
+    displayAdminInfo() {
+        const role = sessionStorage.getItem('adminRole');
+        const adminPath = JSON.parse(sessionStorage.getItem('adminPath') || '[]');
+        const roleText = document.getElementById('adminRoleText');
+        
+        if (roleText) {
+            if (role === 'superadmin') {
+                roleText.textContent = 'Супер-администратор — видит все подразделения';
+            } else {
+                const deptName = adminPath[adminPath.length - 1] || '';
+                const roleNames = {
+                    'filial': 'Директор филиала',
+                    'director': 'Руководитель дирекции',
+                    'linear': 'Начальник линейного отдела',
+                    'local': 'Начальник подразделения'
+                };
+                roleText.textContent = `${roleNames[role] || 'Администратор'}: ${deptName}`;
+            }
+        }
+    }
+
     async loadSurveys() {
         try {
-            const response = await fetch('/api/surveys');
-            this.surveys = await response.json();
+            const response = await fetch('http://212.113.99.102:3000/api/surveys');
+            let surveys = await response.json();
+            
+            const role = sessionStorage.getItem('adminRole');
+            const adminPath = JSON.parse(sessionStorage.getItem('adminPath') || '[]');
+            
+            if (role === 'superadmin' || adminPath.length === 0) {
+                this.surveys = surveys;
+                return;
+            }
+            
+            const adminDept = adminPath[adminPath.length - 1];
+            
+            // Видит только опросы своего уровня
+            this.surveys = surveys.filter(survey => {
+                return survey.user.department === adminDept;
+            });
         } catch (error) {
             console.error('Ошибка загрузки опросов:', error);
             this.surveys = [];
@@ -99,7 +140,6 @@ class AdminPanel {
 
         const averageScore = (this.surveys.reduce((sum, s) => sum + parseFloat(s.averageScore), 0) / totalSurveys).toFixed(1);
         
-        // Вычисляем красные зоны
         const factorAverages = {};
         surveyFactors.forEach((factor, index) => {
             const scores = this.surveys.map(s => s.ratings[index]);
@@ -125,7 +165,6 @@ class AdminPanel {
             return;
         }
 
-        // Вычисляем среднее по каждому фактору
         const factorAverages = {};
         surveyFactors.forEach((factor, index) => {
             const scores = this.surveys.map(s => s.ratings[index]);
@@ -133,7 +172,6 @@ class AdminPanel {
             factorAverages[index] = parseFloat(avg);
         });
 
-        // Находим красные зоны
         const dangerZones = Object.keys(factorAverages).filter(index => factorAverages[index] < 5);
         
         if (dangerZones.length === 0) {
@@ -196,13 +234,11 @@ class AdminPanel {
     renderFactorsChart() {
         const ctx = document.getElementById('factorsChart').getContext('2d');
         
-        // Вычисляем средние значения по факторам
         const factorAverages = surveyFactors.map((factor, index) => {
             const scores = this.surveys.map(s => s.ratings[index]);
             return (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
         });
 
-        // Уничтожаем старый график если есть
         if (this.factorsChart) {
             this.factorsChart.destroy();
         }
@@ -218,10 +254,6 @@ class AdminPanel {
                         score < 5 ? '#F44336' : 
                         score < 7 ? '#FF9800' : '#4CAF50'
                     ),
-                    borderColor: factorAverages.map(score => 
-                        score < 5 ? '#d32f2f' : 
-                        score < 7 ? '#F57C00' : '#388E3C'
-                    ),
                     borderWidth: 1
                 }]
             },
@@ -230,25 +262,13 @@ class AdminPanel {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `Средняя оценка: ${context.raw}/10`;
-                            }
-                        }
-                    }
+                    legend: { display: false }
                 },
                 scales: {
                     x: {
                         min: 0,
                         max: 10,
-                        title: {
-                            display: true,
-                            text: 'Баллы'
-                        }
+                        title: { display: true, text: 'Баллы' }
                     }
                 }
             }
@@ -258,7 +278,6 @@ class AdminPanel {
     renderTrendChart() {
         const ctx = document.getElementById('trendChart').getContext('2d');
         
-        // Сортируем опросы по дате
         const sortedSurveys = [...this.surveys].sort((a, b) => 
             new Date(a.timestamp) - new Date(b.timestamp)
         );
@@ -268,7 +287,6 @@ class AdminPanel {
         );
         const scores = sortedSurveys.map(s => parseFloat(s.averageScore));
 
-        // Уничтожаем старый график если есть
         if (this.trendChart) {
             this.trendChart.destroy();
         }
@@ -296,25 +314,13 @@ class AdminPanel {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'top'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `Средний балл: ${context.raw}/10`;
-                            }
-                        }
-                    }
+                    legend: { position: 'top' }
                 },
                 scales: {
                     y: {
                         min: 0,
                         max: 10,
-                        title: {
-                            display: true,
-                            text: 'Баллы'
-                        }
+                        title: { display: true, text: 'Баллы' }
                     }
                 }
             }
@@ -363,5 +369,4 @@ class AdminPanel {
     }
 }
 
-// Инициализация панели администратора
 const adminPanel = new AdminPanel();

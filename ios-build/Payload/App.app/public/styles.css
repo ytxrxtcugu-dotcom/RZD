@@ -29,7 +29,7 @@ body {
     padding: 20px;
 }
 
-/* Стили для заставки */
+/* Заставка */
 .splash-screen {
     position: fixed;
     top: 0;
@@ -64,23 +64,13 @@ body {
     align-items: center;
     justify-content: center;
     padding: 15px;
-    box-shadow: 
-        0 5px 20px rgba(0, 0, 0, 0.4),
-        0 0 0 3px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(255, 255, 255, 0.1);
     animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-    0%, 100% {
-        box-shadow: 
-            0 5px 20px rgba(0, 0, 0, 0.4),
-            0 0 0 3px rgba(255, 255, 255, 0.1);
-    }
-    50% {
-        box-shadow: 
-            0 5px 20px rgba(0, 0, 0, 0.4),
-            0 0 0 8px rgba(255, 255, 255, 0.15);
-    }
+    0%, 100% { box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(255, 255, 255, 0.1); }
+    50% { box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4), 0 0 0 8px rgba(255, 255, 255, 0.15); }
 }
 
 .splash-logo-img {
@@ -121,12 +111,8 @@ body {
 }
 
 @keyframes loading {
-    0% {
-        transform: translateX(-100%);
-    }
-    100% {
-        transform: translateX(200%);
-    }
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
 }
 
 .splash-loading-text {
@@ -139,7 +125,7 @@ body {
     to { opacity: 1; }
 }
 
-/* Стили для формы логина сотрудника */
+/* Форма логина */
 .login-form-container {
     max-width: 500px;
     margin: 40px auto;
@@ -169,17 +155,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 12px;
-    box-shadow: 
-        0 3px 15px rgba(0, 0, 0, 0.2),
-        0 0 0 2px rgba(226, 26, 26, 0.1);
-    transition: all 0.3s;
-}
-
-.login-logo-circle:hover {
-    transform: scale(1.05);
-    box-shadow: 
-        0 5px 20px rgba(0, 0, 0, 0.3),
-        0 0 0 4px rgba(226, 26, 26, 0.2);
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(226, 26, 26, 0.1);
 }
 
 .login-logo-img {
@@ -245,12 +221,6 @@ input[type="text"]:focus {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
 .admin-link {
     text-align: center;
     margin-top: 20px;
@@ -262,14 +232,171 @@ input[type="text"]:focus {
     color: #666;
     text-decoration: none;
     font-size: 14px;
-    transition: color 0.3s;
 }
 
 .admin-link a:hover {
     color: var(--primary-color);
 }
 
-/* Стили для меню */
+/* Кнопка выбора подразделения */
+.btn-select-department {
+    width: 100%;
+    padding: 12px 15px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.btn-select-department:hover {
+    border-color: var(--primary-color);
+}
+
+.btn-select-arrow {
+    color: #666;
+}
+
+/* Модальное окно */
+.department-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.department-modal-content {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.department-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.department-modal-header h3 {
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #666;
+}
+
+.department-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.breadcrumbs {
+    margin-bottom: 15px;
+    color: #666;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.breadcrumbs span {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.department-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.department-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.department-item:hover {
+    background: #e9ecef;
+}
+
+.department-item.selected {
+    background: #fff3f3;
+    border: 2px solid var(--primary-color);
+}
+
+.item-arrow {
+    color: #999;
+    font-size: 20px;
+}
+
+.item-select {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.department-modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid #eee;
+}
+
+.btn-cancel {
+    flex: 1;
+    padding: 12px;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-confirm {
+    flex: 1;
+    padding: 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Меню */
 .menu-container {
     max-width: 800px;
     margin: 40px auto;
@@ -338,7 +465,6 @@ input[type="text"]:focus {
     margin-bottom: 20px;
 }
 
-/* Список опросов */
 .survey-list {
     display: flex;
     flex-direction: column;
@@ -353,8 +479,6 @@ input[type="text"]:focus {
     border-radius: 12px;
     transition: all 0.3s;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
 }
 
 .survey-list-item.available {
@@ -408,43 +532,24 @@ input[type="text"]:focus {
 .status-available {
     background: #fff3e0;
     color: #ff9800;
-    border: 1px solid #ffcc80;
 }
 
 .status-completed {
     background: #e8f5e9;
     color: #4caf50;
-    border: 1px solid #a5d6a7;
 }
 
 .survey-arrow {
     font-size: 24px;
     color: var(--primary-color);
-    transition: transform 0.3s;
 }
 
-.survey-list-item.available:hover .survey-arrow {
-    transform: translateX(5px);
-}
-
-/* Стили для формы опроса */
+/* Форма опроса */
 .survey-form {
     background-color: var(--card-background);
     border-radius: 10px;
     padding: 30px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    color: var(--primary-color);
-    margin-bottom: 10px;
-    text-align: center;
-}
-
-.subtitle {
-    text-align: center;
-    margin-bottom: 30px;
-    color: #666;
 }
 
 .btn-back {
@@ -544,7 +649,6 @@ h1 {
     text-align: center;
 }
 
-/* Сообщение о завершении */
 .completion-message {
     text-align: center;
     padding: 40px;
@@ -565,7 +669,6 @@ h1 {
     margin-bottom: 20px;
 }
 
-/* Адаптивность */
 @media (max-width: 600px) {
     .container {
         padding: 10px;
@@ -577,21 +680,6 @@ h1 {
     
     .factor-item {
         padding: 15px;
-    }
-    
-    .splash-title {
-        font-size: 22px;
-    }
-    
-    .splash-logo-circle {
-        width: 80px;
-        height: 80px;
-        padding: 12px;
-    }
-    
-    .splash-logo-img {
-        width: 55px;
-        height: 55px;
     }
     
     .login-form-container {
@@ -610,12 +698,23 @@ h1 {
         text-align: center;
     }
     
-    .menu-user-info {
-        flex-direction: column;
-    }
-    
     .survey-list-item {
         flex-direction: column;
         text-align: center;
+    }
+    
+    .splash-title {
+        font-size: 22px;
+    }
+    
+    .splash-logo-circle {
+        width: 80px;
+        height: 80px;
+        padding: 12px;
+    }
+    
+    .splash-logo-img {
+        width: 55px;
+        height: 55px;
     }
 }

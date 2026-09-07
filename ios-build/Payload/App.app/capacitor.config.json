@@ -2,5 +2,13 @@
 	"appId": "com.rzd.survey",
 	"appName": "Опрос РЖД",
 	"webDir": "frontend",
+	"server": {
+		"androidScheme": "http",
+		"iosScheme": "http",
+		"cleartext": true,
+		"allowNavigation": [
+			"*"
+		]
+	},
 	"packageClassList": []
 }

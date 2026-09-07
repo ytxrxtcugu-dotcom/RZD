@@ -12,7 +12,11 @@
         <!-- Шапка -->
         <header class="admin-header">
             <div class="header-left">
-                <div class="logo">🚂 РЖД</div>
+                <div class="admin-logo-wrapper">
+                    <div class="admin-logo-circle">
+                        <img src="images/RZDlogo.png" alt="РЖД" class="admin-logo-img">
+                    </div>
+                </div>
                 <div>
                     <h1>Панель администратора</h1>
                     <p>Аналитика удовлетворенности работой</p>
@@ -20,6 +24,7 @@
             </div>
             <div class="header-right">
                 <button class="btn-export" onclick="exportData()">📥 Экспорт данных</button>
+                <button class="btn-logout" onclick="logout()">🚪 Выйти</button>
             </div>
         </header>
 
