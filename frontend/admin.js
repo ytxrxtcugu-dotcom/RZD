@@ -42,15 +42,8 @@ function exportData() {
             let filteredSurveys = surveys;
             
             if (role !== 'superadmin' && adminPath.length > 0) {
-                const adminPanel = new AdminPanel();
-                const subDepts = adminPanel.getSubordinateDepartments(adminPath);
-                filteredSurveys = surveys.filter(s => 
-                    subDepts.some(dept => 
-                        s.user.department === dept || 
-                        s.user.department.includes(dept) ||
-                        dept.includes(s.user.department)
-                    )
-                );
+                const adminDept = adminPath[adminPath.length - 1];
+                filteredSurveys = surveys.filter(s => s.user.department === adminDept);
             }
             
             const dataStr = JSON.stringify(filteredSurveys, null, 2);
@@ -122,59 +115,15 @@ class AdminPanel {
                 return;
             }
             
-            const subordinateDepartments = this.getSubordinateDepartments(adminPath);
+            const adminDept = adminPath[adminPath.length - 1];
             
+            // Видит только опросы своего уровня
             this.surveys = surveys.filter(survey => {
-                const userDept = survey.user.department;
-                
-                return subordinateDepartments.some(dept => {
-                    return userDept === dept || 
-                           userDept.includes(dept) ||
-                           dept.includes(userDept);
-                });
+                return survey.user.department === adminDept;
             });
         } catch (error) {
             console.error('Ошибка загрузки опросов:', error);
             this.surveys = [];
-        }
-    }
-
-    getSubordinateDepartments(adminPath) {
-        const result = [];
-        
-        adminPath.forEach(p => result.push(p));
-        
-        const lastPath = adminPath[adminPath.length - 1];
-        
-        this.findSubDepartments(rzdStructure, lastPath, result);
-        
-        return result;
-    }
-
-    findSubDepartments(data, target, result) {
-        if (!data || typeof data !== 'object') return;
-        
-        Object.keys(data).forEach(key => {
-            if (key === target) {
-                this.collectAllSubDepartments(data[key], result);
-            } else {
-                this.findSubDepartments(data[key], target, result);
-            }
-        });
-    }
-
-    collectAllSubDepartments(data, result) {
-        if (!data) return;
-        
-        if (typeof data === 'object' && !Array.isArray(data)) {
-            Object.keys(data).forEach(key => {
-                result.push(key);
-                this.collectAllSubDepartments(data[key], result);
-            });
-        } else if (Array.isArray(data)) {
-            data.forEach(item => {
-                result.push(item);
-            });
         }
     }
 
