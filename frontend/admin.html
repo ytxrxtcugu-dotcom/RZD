@@ -5,96 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель управления | РЖД Опросы</title>
     <link rel="stylesheet" href="admin-styles.css">
-    <!-- Подключение Chart.js для отрисовки графиков -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Боковое меню -->
     <aside class="sidebar">
         <div class="brand">
             <img src="images/RZDlogo.png" alt="РЖД">
             <span>Админ-панель</span>
         </div>
         <ul class="nav-menu">
-            <li class="nav-item active">Дашборд</li>
-            <li class="nav-item">Управление опросами</li>
-            <li class="nav-item">Сотрудники</li>
-            <li class="nav-item">Отчеты (Excel)</li>
-            <li class="nav-item" style="margin-top: auto; color: #E21A1A;">Выйти</li>
+            <li class="nav-item active" data-target="dashboard">Дашборд</li>
+            <li class="nav-item" data-target="employees">Результаты сотрудников</li>
+            <li class="nav-item" id="exportBtn">Выгрузка (Excel)</li>
+            <li class="nav-item" id="logoutBtn" style="margin-top: auto; color: #E21A1A;">Выйти</li>
         </ul>
     </aside>
 
-    <!-- Основной контент -->
     <main class="main-content">
-        <header class="header">
-            <h1>Обзор удовлетворенности (Q3 2026)</h1>
-        </header>
+        <!-- Экран: Дашборд -->
+        <div id="view-dashboard" class="view-section active">
+            <header class="header">
+                <h1>Обзор удовлетворенности</h1>
+            </header>
 
-        <!-- Ключевые метрики -->
-        <div class="dashboard-grid">
-            <div class="card">
-                <h3>Пройдено опросов</h3>
-                <div class="value">12,450</div>
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>Пройдено опросов</h3>
+                    <div class="value" id="totalSurveys">0</div>
+                </div>
+                <div class="card">
+                    <h3>Средний балл по компании</h3>
+                    <div class="value" id="avgCompanyScore" style="color: #38A169;">0.0</div>
+                </div>
+                <div class="card">
+                    <h3>Индекс eNPS</h3>
+                    <div class="value" id="enpsScore">+0</div>
+                </div>
             </div>
-            <div class="card">
-                <h3>Общий индекс eNPS</h3>
-                <div class="value" style="color: #38A169;">+42</div>
-            </div>
-            <div class="card">
-                <h3>Вовлеченность</h3>
-                <div class="value">87%</div>
+
+            <div class="analytics-grid">
+                <div class="card">
+                    <h3>Динамика удовлетворенности</h3>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Оценка по категориям</h3>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Блок с графиками -->
-        <div class="analytics-grid">
+        <!-- Экран: Таблица сотрудников -->
+        <div id="view-employees" class="view-section">
+            <header class="header">
+                <h1>Результаты сотрудников</h1>
+            </header>
             <div class="card">
-                <h3>Динамика удовлетворенности</h3>
-                <div class="chart-container">
-                    <canvas id="trendChart"></canvas>
-                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ФИО сотрудника</th>
+                            <th>Подразделение</th>
+                            <th>Средний балл</th>
+                            <th>Дата прохождения</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeesTableBody">
+                        <!-- Заполняется через JS -->
+                    </tbody>
+                </table>
             </div>
-            <div class="card">
-                <h3>Оценка по категориям</h3>
-                <div class="chart-container">
-                    <canvas id="radarChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Таблица последних опросов -->
-        <div class="card" style="margin-top: 24px;">
-            <h3>Активные кампании</h3>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Название опроса</th>
-                        <th>Подразделение</th>
-                        <th>Участие</th>
-                        <th>Статус</th>
-                    </tr>
-                </thead>
-                <tbody id="adminSurveysTable">
-                    <tr>
-                        <td><strong>Условия труда локомотивных бригад</strong></td>
-                        <td>Дирекция тяги</td>
-                        <td>84% (4,200 чел.)</td>
-                        <td><span class="status active">Активен</span></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Оценка руководителей среднего звена</strong></td>
-                        <td>Аппарат управления</td>
-                        <td>92% (850 чел.)</td>
-                        <td><span class="status active">Активен</span></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Качество ДМС 2025</strong></td>
-                        <td>Все подразделения</td>
-                        <td>100%</td>
-                        <td><span class="status closed">Завершен</span></td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
     </main>
 
