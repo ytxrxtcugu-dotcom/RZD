@@ -107,13 +107,24 @@ function writeSurveys(surveys) {
 }
 
 function inScope(survey, scope) {
-    if (!scope.length) return true;
-    const prefix = scope.join(SEP);
-    const match = (p) => p === prefix || p.startsWith(prefix + SEP);
+    // Пустая область зарезервирована только для супер-администратора.
+    if (!Array.isArray(scope) || scope.length === 0) return true;
+
+    // Строгая изоляция: совпадает только точный путь подразделения.
+    // Родительские подразделения НЕ получают анкеты дочерних подразделений.
+    const allowedPath = scope.join(SEP);
     const u = survey.user || {};
-    if (typeof u.departmentPath === 'string' && u.departmentPath) return match(u.departmentPath);
-    // Старые анкеты без пути: сопоставление по названию подразделения
-    return (LEAF_INDEX.get(u.department) || []).some(match);
+
+    if (typeof u.departmentPath === 'string' && u.departmentPath) {
+        return u.departmentPath.trim() === allowedPath;
+    }
+
+    // Старые анкеты без departmentPath: допускаем только точное совпадение
+    // полного пути, восстановленного из уникального названия листа.
+    // Не ищем совпадения по префиксу и не угадываем неоднозначные пути.
+    const candidates = LEAF_INDEX.get(u.department) || [];
+    const exactMatches = candidates.filter((candidate) => candidate === allowedPath);
+    return exactMatches.length === 1;
 }
 
 function requireAuth(req, res, next) {
