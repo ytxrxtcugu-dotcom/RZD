@@ -101,4 +101,8 @@
   .nav-item { white-space: nowrap; padding: 10px 14px; }
 }
 @media (max-width: 640px) {
-  .kpi-grid,
+  .kpi-grid, .insight-grid { grid-template-columns: 1fr; }
+  .card { padding: 22px; }
+  .chart-container { height: 260px; }
+}
+.scope-info { margin-bottom: 20px; color: var(--text-3); font-size: var(--fs-sm); font-weight: 600; }

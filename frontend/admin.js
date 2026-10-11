@@ -10,7 +10,6 @@ const surveyFactors = [
     "Информирование сотрудников"
 ];
 
-// Короткие подписи осей радара (по порядку surveyFactors)
 const factorShort = [
     "Рабочее место", "Ресурсы", "Режим труда", "Зарплата", "Оплата и результат",
     "Соцпакет", "Соцгарантии", "Карьера", "Обучение", "Руководитель",
@@ -25,55 +24,82 @@ class AdminDashboard {
     constructor() {
         this.surveys = [];
         this.charts = {};
-        this.isDemo = false;
+        this.loadError = '';
         this.query = '';
+        this.token = sessionStorage.getItem('adminToken') || '';
         this.init();
     }
 
     init() { this.setupAuth(); }
 
+    showApp() {
+        document.getElementById('adminLoginScreen').style.display = 'none';
+        document.getElementById('adminApp').style.display = 'flex';
+        this.initializeApp();
+    }
+
+    logout() {
+        ['adminToken', 'adminUsername', 'adminScope'].forEach((k) => sessionStorage.removeItem(k));
+        window.location.reload();
+    }
+
     setupAuth() {
-        const loginScreen = document.getElementById('adminLoginScreen');
-        const appScreen = document.getElementById('adminApp');
         const loginForm = document.getElementById('adminLoginForm');
         const errorMsg = document.getElementById('loginError');
 
-        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
-            loginScreen.style.display = 'none';
-            appScreen.style.display = 'flex';
-            this.initializeApp();
-        }
+        if (this.token) this.showApp();
 
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const user = document.getElementById('adminUsername').value;
-            const pass = document.getElementById('adminPassword').value;
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            errorMsg.style.display = 'none';
 
-            // ВНИМАНИЕ: проверка на клиенте не обеспечивает защиту (см. аудит).
-            const validCredentials = { 'admin': 'admin', 'root': 'password' };
-
-            if (validCredentials[user] && validCredentials[user] === pass) {
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                loginScreen.style.display = 'none';
-                appScreen.style.display = 'flex';
-                this.initializeApp();
-            } else {
+            try {
+                const response = await fetch(`${API_BASE}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && data.success) {
+                    this.token = data.token;
+                    sessionStorage.setItem('adminToken', data.token);
+                    sessionStorage.setItem('adminUsername', data.username);
+                    sessionStorage.setItem('adminScope', JSON.stringify(data.scope || []));
+                    this.showApp();
+                } else {
+                    errorMsg.textContent = data.message || 'Неверный логин или пароль';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Сервер недоступен';
                 errorMsg.style.display = 'block';
             }
         });
 
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            sessionStorage.removeItem('adminLoggedIn');
-            window.location.reload();
-        });
+        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
     }
 
     async initializeApp() {
         this.setupNavigation();
+        this.renderScope();
         await this.fetchData();
-        document.getElementById('demoBanner').hidden = !this.isDemo;
+        const banner = document.getElementById('demoBanner');
+        banner.textContent = this.loadError;
+        banner.hidden = !this.loadError;
         this.renderDashboard();
         this.renderEmployeesTable();
+    }
+
+    renderScope() {
+        let scope = [];
+        try { scope = JSON.parse(sessionStorage.getItem('adminScope') || '[]'); } catch { scope = []; }
+        const user = sessionStorage.getItem('adminUsername') || '';
+        const el = document.getElementById('scopeInfo');
+        el.textContent = scope.length
+            ? `Вы вошли как ${user}. Область данных: ${scope.join(' / ')}`
+            : `Вы вошли как ${user}. Область данных: все подразделения`;
     }
 
     setupNavigation() {
@@ -96,22 +122,20 @@ class AdminDashboard {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 8000);
         try {
-            const response = await fetch(`${API_BASE}/api/surveys`, { signal: controller.signal });
-            if (response.ok) this.surveys = await response.json();
+            const response = await fetch(`${API_BASE}/api/surveys`, {
+                signal: controller.signal,
+                headers: { Authorization: `Bearer ${this.token}` }
+            });
+            if (response.status === 401) { this.logout(); return; }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            this.surveys = Array.isArray(data) ? data : [];
         } catch (error) {
-            console.warn('Сервер недоступен, загружены демо-данные');
+            console.warn('Не удалось загрузить данные', error);
+            this.surveys = [];
+            this.loadError = 'Не удалось загрузить данные с сервера. Обновите страницу или повторите позже.';
         } finally {
             clearTimeout(timer);
-        }
-
-        if (!Array.isArray(this.surveys) || this.surveys.length === 0) {
-            this.isDemo = true;
-            this.surveys = [
-                { user: { fullName: 'Иванов И.И.', department: 'Дирекция тяги' }, averageScore: 8.5, ratings: { 0: 8, 1: 9, 2: 7, 3: 8 }, timestamp: new Date().toISOString() },
-                { user: { fullName: 'Петров П.П.', department: 'Аппарат управления' }, averageScore: 6.2, ratings: { 0: 6, 1: 5, 2: 8, 3: 4 }, timestamp: new Date(Date.now() - 86400000).toISOString() },
-                { user: { fullName: 'Сидорова А.В.', department: 'Дирекция тяги' }, averageScore: 9.1, ratings: { 0: 9, 1: 10, 2: 8, 3: 9 }, timestamp: new Date(Date.now() - 172800000).toISOString() },
-                { user: { fullName: 'Смирнов В.А.', department: 'Дирекция инфраструктуры' }, averageScore: 4.5, ratings: { 0: 4, 1: 3, 2: 5, 3: 4 }, timestamp: new Date(Date.now() - 259200000).toISOString() }
-            ];
         }
     }
 
@@ -124,7 +148,7 @@ class AdminDashboard {
         const avg = valid.length ? valid.reduce((sum, s) => sum + this.score(s), 0) / valid.length : 0;
         document.getElementById('avgCompanyScore').textContent = avg.toFixed(1);
 
-        // Методика: промоутеры — средний балл ≥ 9, критики — ≤ 6. [ТРЕБУЕТСЯ ПРОВЕРКА обоснования порогов]
+        // Пороги: промоутеры ≥ 9, критики ≤ 6. [ТРЕБУЕТСЯ ПРОВЕРКА обоснования порогов]
         const promoters = valid.filter((s) => this.score(s) >= 9).length;
         const detractors = valid.filter((s) => this.score(s) <= 6).length;
         const enps = valid.length ? Math.round(((promoters - detractors) / valid.length) * 100) : 0;
@@ -156,17 +180,18 @@ class AdminDashboard {
         const deptScores = {};
         this.surveys.forEach((s) => {
             const dept = s.user?.department;
+            const key = s.user?.departmentPath || dept;
             const v = this.score(s);
             if (!dept || Number.isNaN(v)) return;
-            (deptScores[dept] ||= { sum: 0, count: 0 });
-            deptScores[dept].sum += v;
-            deptScores[dept].count += 1;
+            (deptScores[key] ||= { name: dept, sum: 0, count: 0 });
+            deptScores[key].sum += v;
+            deptScores[key].count += 1;
         });
 
         let topDept = '-', maxScore = 0;
-        for (const [dept, d] of Object.entries(deptScores)) {
+        for (const d of Object.values(deptScores)) {
             const avg = d.sum / d.count;
-            if (avg > maxScore) { maxScore = avg; topDept = dept; }
+            if (avg > maxScore) { maxScore = avg; topDept = d.name; }
         }
         document.getElementById('topDepartment').textContent = maxScore > 0 ? `${topDept} (${maxScore.toFixed(1)})` : '-';
 
@@ -209,8 +234,7 @@ class AdminDashboard {
         Chart.defaults.font.family = "'Manrope', sans-serif";
         Chart.defaults.color = '#5C6370';
 
-        const canvas = document.getElementById('trendChart');
-        const ctx = canvas.getContext('2d');
+        const ctx = document.getElementById('trendChart').getContext('2d');
         const gradient = ctx.createLinearGradient(0, 0, 0, 320);
         gradient.addColorStop(0, 'rgba(226, 26, 26, 0.22)');
         gradient.addColorStop(1, 'rgba(226, 26, 26, 0)');
@@ -278,7 +302,7 @@ class AdminDashboard {
         });
 
         if (!rows.length) {
-            tbody.innerHTML = '<tr><td colspan="4" class="data-table__empty">Ничего не найдено</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="data-table__empty">Нет данных для вашей области</td></tr>';
             return;
         }
 
@@ -295,7 +319,7 @@ class AdminDashboard {
             return `
                 <tr>
                     <td>${esc(survey.user?.fullName)}</td>
-                    <td>${esc(survey.user?.department)}</td>
+                    <td title="${esc(survey.user?.departmentPath || '')}">${esc(survey.user?.department)}</td>
                     <td><span class="score-badge ${badgeClass}">${Number.isNaN(score) ? '—' : score.toFixed(1)}</span></td>
                     <td>${esc(date)}</td>
                 </tr>`;
@@ -303,19 +327,19 @@ class AdminDashboard {
     }
 
     exportToExcel() {
-        // Кавычки по RFC 4180 + защита от формул (=, +, -, @) при открытии в Excel
         const cell = (value) => {
             let s = String(value ?? '');
             if (/^[=+\-@]/.test(s)) s = `'${s}`;
             return `"${s.replace(/"/g, '""')}"`;
         };
-        const rows = [['ФИО', 'Подразделение', 'Средний балл', 'Дата прохождения'].map(cell).join(';')];
+        const rows = [['ФИО', 'Подразделение', 'Полный путь', 'Средний балл', 'Дата прохождения'].map(cell).join(';')];
 
         this.surveys.forEach((survey) => {
             const date = new Date(survey.timestamp).toLocaleDateString('ru-RU', {
                 day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
-            rows.push([survey.user?.fullName, survey.user?.department, survey.averageScore, date].map(cell).join(';'));
+            rows.push([survey.user?.fullName, survey.user?.department, survey.user?.departmentPath, survey.averageScore, date]
+                .map(cell).join(';'));
         });
 
         const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
