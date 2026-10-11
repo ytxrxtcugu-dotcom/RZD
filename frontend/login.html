@@ -15,14 +15,11 @@
                 <input type="text" id="fullName" required placeholder="Иванов Иван Иванович">
             </div>
             <div class="input-group">
-                <label for="department">Предприятие / Подразделение</label>
-                <select id="department" required>
-                    <option value="" disabled selected>Выберите из списка...</option>
-                    <option value="Дирекция тяги">Дирекция тяги</option>
-                    <option value="Дирекция инфраструктуры">Дирекция инфраструктуры</option>
-                    <option value="Аппарат управления">Аппарат управления</option>
-                    <option value="Федеральная пассажирская компания">Федеральная пассажирская компания</option>
-                </select>
+                <label>Предприятие / Подразделение</label>
+                <button type="button" class="btn-select" onclick="app.openDepartmentModal()">
+                    <span id="selectedDepartmentText" style="color: var(--text-muted);">Выберите из списка...</span>
+                    <svg style="width:20px;height:20px;color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/></svg>
+                </button>
             </div>
             <button type="submit" class="btn-submit">Войти к тестам</button>
         </form>

@@ -36,7 +36,7 @@ class AdminDashboard {
             const user = document.getElementById('adminUsername').value;
             const pass = document.getElementById('adminPassword').value;
 
-            // ЗДЕСЬ УКАЗАНЫ ВАШИ СТАРЫЕ ЛОГИНЫ И ПАРОЛИ (добавьте нужные)
+            // ЗДЕСЬ УКАЗАНЫ ПАРОЛИ
             const validCredentials = {
                 'admin': 'admin',
                 'root': 'password'
@@ -106,35 +106,31 @@ class AdminDashboard {
         document.getElementById('totalSurveys').textContent = this.surveys.length;
         
         const totalScore = this.surveys.reduce((sum, survey) => sum + parseFloat(survey.averageScore), 0);
-        const avgScore = (totalScore / this.surveys.length).toFixed(1);
+        const avgScore = this.surveys.length > 0 ? (totalScore / this.surveys.length).toFixed(1) : 0;
         document.getElementById('avgCompanyScore').textContent = avgScore;
 
         const promoters = this.surveys.filter(s => s.averageScore >= 9).length;
         const detractors = this.surveys.filter(s => s.averageScore <= 6).length;
-        const enps = Math.round(((promoters - detractors) / this.surveys.length) * 100);
+        const enps = this.surveys.length > 0 ? Math.round(((promoters - detractors) / this.surveys.length) * 100) : 0;
         
         const enpsEl = document.getElementById('enpsScore');
         enpsEl.textContent = enps > 0 ? `+${enps}` : enps;
         enpsEl.style.color = enps >= 20 ? '#38A169' : (enps > 0 ? '#D69E2E' : '#E21A1A');
 
         this.calculateAdvancedMetrics();
-
         this.initTrendChart(avgScore);
         this.initRadarChart();
     }
 
     calculateAdvancedMetrics() {
-        // Вычисление лучшего подразделения
         const deptScores = {};
         const factorScores = {};
 
         this.surveys.forEach(survey => {
-            // Агрегация по подразделениям
             if (!deptScores[survey.user.department]) deptScores[survey.user.department] = { sum: 0, count: 0 };
             deptScores[survey.user.department].sum += parseFloat(survey.averageScore);
             deptScores[survey.user.department].count += 1;
 
-            // Агрегация по факторам
             if (survey.ratings) {
                 Object.entries(survey.ratings).forEach(([index, score]) => {
                     if (!factorScores[index]) factorScores[index] = { sum: 0, count: 0 };
@@ -144,26 +140,26 @@ class AdminDashboard {
             }
         });
 
-        // Находим лучшее подразделение
         let topDept = '-';
         let maxScore = 0;
         for (const [dept, data] of Object.entries(deptScores)) {
             const avg = data.sum / data.count;
             if (avg > maxScore) { maxScore = avg; topDept = dept; }
         }
-        document.getElementById('topDepartment').textContent = `${topDept} (${maxScore.toFixed(1)})`;
+        document.getElementById('topDepartment').textContent = maxScore > 0 ? `${topDept} (${maxScore.toFixed(1)})` : '-';
 
-        // Находим проблемную зону
         let worstFactor = '-';
         let minFactorScore = 11;
+        let hasFactors = false;
         for (const [index, data] of Object.entries(factorScores)) {
+            hasFactors = true;
             const avg = data.sum / data.count;
             if (avg < minFactorScore) { 
                 minFactorScore = avg; 
                 worstFactor = surveyFactors[index] || `Фактор ${index}`; 
             }
         }
-        document.getElementById('problemArea').textContent = `${worstFactor} (${minFactorScore.toFixed(1)})`;
+        document.getElementById('problemArea').textContent = hasFactors ? `${worstFactor} (${minFactorScore.toFixed(1)})` : '-';
     }
 
     initTrendChart(currentAvg) {
@@ -272,7 +268,6 @@ class AdminDashboard {
             ].join(';'));
         });
 
-        // Добавляем BOM для правильного отображения кириллицы в Excel
         const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.join('\n');
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");

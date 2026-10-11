@@ -107,6 +107,7 @@ body {
 .score-high { background: #C6F6D5; color: #22543D; }
 .score-medium { background: #FEFCBF; color: #744210; }
 .score-low { background: #FED7D7; color: #822727; }
+
 /* Стили авторизации админа */
 .admin-login-overlay {
     position: fixed;

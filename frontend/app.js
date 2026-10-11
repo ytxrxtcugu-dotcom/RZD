@@ -11,6 +11,8 @@ const surveyFactors = [
 const ICONS = {
     user: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
     arrowLeft: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>`,
+    chevronRight: `<svg style="width:20px;height:20px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/></svg>`,
+    close: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6 6 18M6 6l12 12"/></svg>`,
     checkCircle: `<svg style="width:100%;height:100%" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 4L12 14.01l-3-3"/></svg>`
 };
 
@@ -18,6 +20,7 @@ class SurveyApp {
     constructor() {
         this.ratings = {};
         this.currentUser = null;
+        this.selectedDepartment = null;
         this.init();
     }
 
@@ -41,8 +44,13 @@ class SurveyApp {
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const fullName = document.getElementById('fullName').value.trim();
-            const department = document.getElementById('department').value;
+            const department = this.selectedDepartment;
             
+            if (!department) {
+                alert('Пожалуйста, выберите подразделение из списка');
+                return;
+            }
+
             if (fullName && department) {
                 sessionStorage.setItem('userLoggedIn', 'true');
                 sessionStorage.setItem('userData', JSON.stringify({ fullName, department }));
@@ -50,6 +58,119 @@ class SurveyApp {
             }
         });
     }
+
+    // ================= МОДАЛКА ВЫБОРА ПОДРАЗДЕЛЕНИЯ ================= //
+    openDepartmentModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'departmentModal';
+        modal.innerHTML = `
+            <div class="modal-surface">
+                <div class="modal-header">
+                    <h2>Подразделение</h2>
+                    <button class="btn-ghost" style="padding: 4px;" onclick="app.closeDepartmentModal()">
+                        ${ICONS.close}
+                    </button>
+                </div>
+                <div class="breadcrumbs" id="breadcrumbs"></div>
+                <div class="modal-body" id="departmentList"></div>
+                <div class="modal-footer">
+                    <button class="btn-ghost" onclick="app.closeDepartmentModal()">Отмена</button>
+                    <button class="btn-primary-small" onclick="app.confirmDepartment()">Выбрать</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        this.currentPath = [];
+        this.selectedDepartmentPath = [];
+        this.renderDepartmentLevel();
+    }
+
+    closeDepartmentModal() {
+        const modal = document.getElementById('departmentModal');
+        if (modal) modal.remove();
+    }
+
+    renderDepartmentLevel() {
+        const listContainer = document.getElementById('departmentList');
+        const breadcrumbs = document.getElementById('breadcrumbs');
+        
+        breadcrumbs.innerHTML = '';
+        if (this.currentPath.length > 0) {
+            breadcrumbs.innerHTML = `<span class="breadcrumb-link" onclick="app.navigateTo(-1)">ОАО «РЖД»</span>`;
+            this.currentPath.forEach((item, index) => {
+                breadcrumbs.innerHTML += ` <span style="color: var(--text-muted)">/</span> <span class="breadcrumb-link" onclick="app.navigateTo(${index})">${item}</span>`;
+            });
+        } else {
+            breadcrumbs.innerHTML = `<span>ОАО «РЖД»</span>`;
+        }
+        
+        // rzdStructure берется из глобальной области (внешний файл данных)
+        let data = typeof rzdStructure !== 'undefined' ? rzdStructure : {};
+        for (let i = 0; i < this.currentPath.length; i++) {
+            data = data[this.currentPath[i]];
+        }
+        
+        listContainer.innerHTML = '';
+        
+        if (typeof data === 'object' && !Array.isArray(data)) {
+            Object.keys(data).forEach(key => {
+                const hasChildren = typeof data[key] === 'object' && Object.keys(data[key]).length > 0;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'list-item';
+                
+                if (hasChildren) {
+                    itemDiv.innerHTML = `<span>${key}</span> <span style="color: var(--text-muted)">${ICONS.chevronRight}</span>`;
+                    itemDiv.onclick = () => {
+                        this.currentPath.push(key);
+                        this.selectedDepartmentPath = [];
+                        this.renderDepartmentLevel();
+                    };
+                } else {
+                    itemDiv.innerHTML = `<span>${key}</span>`;
+                    itemDiv.onclick = () => {
+                        this.selectedDepartmentPath = [...this.currentPath, key];
+                        this.highlightSelected(itemDiv);
+                    };
+                }
+                listContainer.appendChild(itemDiv);
+            });
+        } else if (Array.isArray(data)) {
+            data.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'list-item';
+                itemDiv.innerHTML = `<span>${item}</span>`;
+                itemDiv.onclick = () => {
+                    this.selectedDepartmentPath = [...this.currentPath, item];
+                    this.highlightSelected(itemDiv);
+                };
+                listContainer.appendChild(itemDiv);
+            });
+        }
+    }
+
+    highlightSelected(element) {
+        document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    navigateTo(index) {
+        this.currentPath = index === -1 ? [] : this.currentPath.slice(0, index + 1);
+        this.selectedDepartmentPath = [];
+        this.renderDepartmentLevel();
+    }
+
+    confirmDepartment() {
+        if (this.selectedDepartmentPath.length > 0) {
+            const department = this.selectedDepartmentPath[this.selectedDepartmentPath.length - 1];
+            const textEl = document.getElementById('selectedDepartmentText');
+            textEl.textContent = department;
+            textEl.style.color = 'var(--text-main)';
+            this.selectedDepartment = department;
+        }
+        this.closeDepartmentModal();
+    }
+    // ================================================================ //
 
     initMainPage() {
         if (sessionStorage.getItem('userLoggedIn') !== 'true') {
