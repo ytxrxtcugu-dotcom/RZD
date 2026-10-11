@@ -60,6 +60,15 @@
             <div id="view-dashboard" class="view-section active">
                 <header class="header">
                     <h1>Обзор удовлетворенности</h1>
+                    <div class="period-filter">
+                        <label for="periodFilter">Период анализа</label>
+                        <select id="periodFilter">
+                            <option value="30">Последние 30 дней</option>
+                            <option value="90" selected>Последние 90 дней</option>
+                            <option value="365">Последние 12 месяцев</option>
+                            <option value="all">Всё время</option>
+                        </select>
+                    </div>
                 </header>
 
                 <div class="kpi-grid">
@@ -72,8 +81,19 @@
                         <div class="value" id="avgCompanyScore">0.0</div>
                     </div>
                     <div class="card">
-                        <h3>Индекс eNPS</h3>
-                        <div class="value" id="enpsScore">+0</div>
+                        <h3>Индекс оценок</h3>
+                        <div class="value" id="enpsScore">0</div>
+                        <p class="metric-note">Не является классическим eNPS</p>
+                    </div>
+                    <div class="card">
+                        <h3>Низкие оценки (0–4)</h3>
+                        <div class="value" id="lowScoreShare">0%</div>
+                        <p class="metric-note">Доля всех оценок по факторам</p>
+                    </div>
+                    <div class="card">
+                        <h3>Изменение среднего балла</h3>
+                        <div class="value" id="avgChange">—</div>
+                        <p class="metric-note">К предыдущему периоду той же длины</p>
                     </div>
                 </div>
 
@@ -96,6 +116,10 @@
                     <div class="card">
                         <h3>Оценка по факторам</h3>
                         <div class="chart-container"><canvas id="radarChart" aria-label="Радар средних оценок по факторам" role="img"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h3>Распределение оценок</h3>
+                        <div class="chart-container"><canvas id="distributionChart" aria-label="Распределение оценок по диапазонам" role="img"></canvas></div>
                     </div>
                 </div>
             </div>
