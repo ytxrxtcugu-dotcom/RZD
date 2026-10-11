@@ -8,79 +8,110 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <aside class="sidebar">
-        <div class="brand">
-            <img src="images/RZDlogo.png" alt="РЖД">
-            <span>Админ-панель</span>
-        </div>
-        <ul class="nav-menu">
-            <li class="nav-item active" data-target="dashboard">Дашборд</li>
-            <li class="nav-item" data-target="employees">Результаты сотрудников</li>
-            <li class="nav-item" id="exportBtn">Выгрузка (Excel)</li>
-            <li class="nav-item" id="logoutBtn" style="margin-top: auto; color: #E21A1A;">Выйти</li>
-        </ul>
-    </aside>
-
-    <main class="main-content">
-        <!-- Экран: Дашборд -->
-        <div id="view-dashboard" class="view-section active">
-            <header class="header">
-                <h1>Обзор удовлетворенности</h1>
-            </header>
-
-            <div class="dashboard-grid">
-                <div class="card">
-                    <h3>Пройдено опросов</h3>
-                    <div class="value" id="totalSurveys">0</div>
+    <!-- Экран авторизации администратора -->
+    <div id="adminLoginScreen" class="admin-login-overlay">
+        <div class="login-wrapper">
+            <img src="images/RZDlogo.png" alt="РЖД Логотип" class="logo-img">
+            <h2 style="margin-top: 0; color: #1A202C;">Вход для администратора</h2>
+            <form id="adminLoginForm">
+                <div class="input-group">
+                    <label for="adminUsername">Логин</label>
+                    <input type="text" id="adminUsername" required placeholder="Введите логин">
                 </div>
-                <div class="card">
-                    <h3>Средний балл по компании</h3>
-                    <div class="value" id="avgCompanyScore" style="color: #38A169;">0.0</div>
+                <div class="input-group">
+                    <label for="adminPassword">Пароль</label>
+                    <input type="password" id="adminPassword" required placeholder="Введите пароль">
                 </div>
-                <div class="card">
-                    <h3>Индекс eNPS</h3>
-                    <div class="value" id="enpsScore">+0</div>
-                </div>
+                <div id="loginError" style="color: #E21A1A; font-size: 13px; margin-bottom: 16px; display: none;">Неверный логин или пароль</div>
+                <button type="submit" class="btn-submit">Войти в панель</button>
+            </form>
+            <div style="margin-top: 24px;">
+                <a href="login.html" style="color: #718096; text-decoration: none; font-size: 14px;">Вернуться к опросам сотрудников</a>
             </div>
+        </div>
+    </div>
 
-            <div class="analytics-grid">
-                <div class="card">
-                    <h3>Динамика удовлетворенности</h3>
-                    <div class="chart-container">
-                        <canvas id="trendChart"></canvas>
+    <!-- Основной интерфейс (скрыт до авторизации) -->
+    <div id="adminApp" style="display: none; width: 100%; height: 100%;">
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="images/RZDlogo.png" alt="РЖД">
+                <span>Админ-панель</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-target="dashboard">Дашборд</li>
+                <li class="nav-item" data-target="employees">Результаты сотрудников</li>
+                <li class="nav-item" id="exportBtn">Выгрузка (Excel)</li>
+                <li class="nav-item" id="logoutBtn" style="margin-top: auto; color: #E21A1A;">Выйти</li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div id="view-dashboard" class="view-section active">
+                <header class="header">
+                    <h1>Обзор удовлетворенности</h1>
+                </header>
+
+                <!-- Расширенные метрики -->
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Пройдено опросов</h3>
+                        <div class="value" id="totalSurveys">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Средний балл</h3>
+                        <div class="value" id="avgCompanyScore" style="color: #38A169;">0.0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Индекс eNPS</h3>
+                        <div class="value" id="enpsScore">+0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Лучшее подразделение</h3>
+                        <div class="value" id="topDepartment" style="font-size: 20px; padding-top: 8px;">-</div>
+                    </div>
+                    <div class="card" style="grid-column: span 2;">
+                        <h3>Проблемная зона (Низший балл)</h3>
+                        <div class="value" id="problemArea" style="font-size: 20px; color: #E21A1A; padding-top: 8px;">-</div>
                     </div>
                 </div>
-                <div class="card">
-                    <h3>Оценка по категориям</h3>
-                    <div class="chart-container">
-                        <canvas id="radarChart"></canvas>
+
+                <div class="analytics-grid">
+                    <div class="card">
+                        <h3>Динамика удовлетворенности</h3>
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Оценка по категориям</h3>
+                        <div class="chart-container">
+                            <canvas id="radarChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Экран: Таблица сотрудников -->
-        <div id="view-employees" class="view-section">
-            <header class="header">
-                <h1>Результаты сотрудников</h1>
-            </header>
-            <div class="card">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ФИО сотрудника</th>
-                            <th>Подразделение</th>
-                            <th>Средний балл</th>
-                            <th>Дата прохождения</th>
-                        </tr>
-                    </thead>
-                    <tbody id="employeesTableBody">
-                        <!-- Заполняется через JS -->
-                    </tbody>
-                </table>
+            <div id="view-employees" class="view-section">
+                <header class="header">
+                    <h1>Результаты сотрудников</h1>
+                </header>
+                <div class="card">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ФИО сотрудника</th>
+                                <th>Подразделение</th>
+                                <th>Средний балл</th>
+                                <th>Дата прохождения</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTableBody"></tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script src="admin.js"></script>
 </body>

@@ -1,11 +1,64 @@
+const surveyFactors = [
+    "Состояние рабочего места", "Обеспеченность ресурсами", "Режим труда",
+    "Уровень заработной платы", "Зависимость оплаты труда от результатов работы",
+    "Социальный пакет от компании", "Соблюдение работодателем социальных гарантий",
+    "Возможности карьерного роста", "Организация обучения в компании",
+    "Отношение непосредственного руководителя", "Атмосфера в коллективе, отношения с коллегами",
+    "Корпоративные культурно-массовые и спортивные мероприятия", "Признание заслуг",
+    "Информирование сотрудников"
+];
+
 class AdminDashboard {
     constructor() {
         this.surveys = [];
-        this.charts = {};
         this.init();
     }
 
-    async init() {
+    init() {
+        this.setupAuth();
+    }
+
+    setupAuth() {
+        const loginScreen = document.getElementById('adminLoginScreen');
+        const appScreen = document.getElementById('adminApp');
+        const loginForm = document.getElementById('adminLoginForm');
+        const errorMsg = document.getElementById('loginError');
+
+        // Проверка сессии
+        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+            loginScreen.style.display = 'none';
+            appScreen.style.display = 'flex';
+            this.initializeApp();
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = document.getElementById('adminUsername').value;
+            const pass = document.getElementById('adminPassword').value;
+
+            // ЗДЕСЬ УКАЗАНЫ ВАШИ СТАРЫЕ ЛОГИНЫ И ПАРОЛИ (добавьте нужные)
+            const validCredentials = {
+                'admin': 'admin',
+                'root': 'password'
+            };
+
+            if (validCredentials[user] && validCredentials[user] === pass) {
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                loginScreen.style.display = 'none';
+                appScreen.style.display = 'flex';
+                this.initializeApp();
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            sessionStorage.removeItem('adminLoggedIn');
+            window.location.reload();
+        });
+    }
+
+    async initializeApp() {
         this.setupNavigation();
         await this.fetchData();
         this.renderDashboard();
@@ -24,10 +77,6 @@ class AdminDashboard {
         });
 
         document.getElementById('exportBtn').addEventListener('click', () => this.exportToExcel());
-        
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            window.location.href = 'login.html';
-        });
     }
 
     async fetchData() {
@@ -37,16 +86,15 @@ class AdminDashboard {
                 this.surveys = await response.json();
             }
         } catch (error) {
-            console.warn('Сервер недоступен, загружены демонстрационные данные');
+            console.warn('Сервер недоступен, загружены демо-данные');
         }
 
-        // Если база пуста или сервер недоступен, создаем демо-данные для графиков
         if (!this.surveys || this.surveys.length === 0) {
             this.surveys = [
-                { user: { fullName: 'Иванов И.И.', department: 'Дирекция тяги' }, averageScore: 8.5, timestamp: new Date().toISOString() },
-                { user: { fullName: 'Петров П.П.', department: 'Аппарат управления' }, averageScore: 6.2, timestamp: new Date(Date.now() - 86400000).toISOString() },
-                { user: { fullName: 'Сидорова А.В.', department: 'Федеральная пассажирская компания' }, averageScore: 9.1, timestamp: new Date(Date.now() - 172800000).toISOString() },
-                { user: { fullName: 'Смирнов В.А.', department: 'Дирекция инфраструктуры' }, averageScore: 4.5, timestamp: new Date(Date.now() - 259200000).toISOString() }
+                { user: { fullName: 'Иванов И.И.', department: 'Дирекция тяги' }, averageScore: 8.5, ratings: {0:8, 1:9, 2:7, 3:8}, timestamp: new Date().toISOString() },
+                { user: { fullName: 'Петров П.П.', department: 'Аппарат управления' }, averageScore: 6.2, ratings: {0:6, 1:5, 2:8, 3:4}, timestamp: new Date(Date.now() - 86400000).toISOString() },
+                { user: { fullName: 'Сидорова А.В.', department: 'Дирекция тяги' }, averageScore: 9.1, ratings: {0:9, 1:10, 2:8, 3:9}, timestamp: new Date(Date.now() - 172800000).toISOString() },
+                { user: { fullName: 'Смирнов В.А.', department: 'Дирекция инфраструктуры' }, averageScore: 4.5, ratings: {0:4, 1:3, 2:5, 3:4}, timestamp: new Date(Date.now() - 259200000).toISOString() }
             ];
         }
     }
@@ -55,7 +103,6 @@ class AdminDashboard {
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#718096';
 
-        // Метрики
         document.getElementById('totalSurveys').textContent = this.surveys.length;
         
         const totalScore = this.surveys.reduce((sum, survey) => sum + parseFloat(survey.averageScore), 0);
@@ -70,9 +117,53 @@ class AdminDashboard {
         enpsEl.textContent = enps > 0 ? `+${enps}` : enps;
         enpsEl.style.color = enps >= 20 ? '#38A169' : (enps > 0 ? '#D69E2E' : '#E21A1A');
 
-        // Графики
+        this.calculateAdvancedMetrics();
+
         this.initTrendChart(avgScore);
         this.initRadarChart();
+    }
+
+    calculateAdvancedMetrics() {
+        // Вычисление лучшего подразделения
+        const deptScores = {};
+        const factorScores = {};
+
+        this.surveys.forEach(survey => {
+            // Агрегация по подразделениям
+            if (!deptScores[survey.user.department]) deptScores[survey.user.department] = { sum: 0, count: 0 };
+            deptScores[survey.user.department].sum += parseFloat(survey.averageScore);
+            deptScores[survey.user.department].count += 1;
+
+            // Агрегация по факторам
+            if (survey.ratings) {
+                Object.entries(survey.ratings).forEach(([index, score]) => {
+                    if (!factorScores[index]) factorScores[index] = { sum: 0, count: 0 };
+                    factorScores[index].sum += parseInt(score);
+                    factorScores[index].count += 1;
+                });
+            }
+        });
+
+        // Находим лучшее подразделение
+        let topDept = '-';
+        let maxScore = 0;
+        for (const [dept, data] of Object.entries(deptScores)) {
+            const avg = data.sum / data.count;
+            if (avg > maxScore) { maxScore = avg; topDept = dept; }
+        }
+        document.getElementById('topDepartment').textContent = `${topDept} (${maxScore.toFixed(1)})`;
+
+        // Находим проблемную зону
+        let worstFactor = '-';
+        let minFactorScore = 11;
+        for (const [index, data] of Object.entries(factorScores)) {
+            const avg = data.sum / data.count;
+            if (avg < minFactorScore) { 
+                minFactorScore = avg; 
+                worstFactor = surveyFactors[index] || `Фактор ${index}`; 
+            }
+        }
+        document.getElementById('problemArea').textContent = `${worstFactor} (${minFactorScore.toFixed(1)})`;
     }
 
     initTrendChart(currentAvg) {
@@ -81,7 +172,6 @@ class AdminDashboard {
         gradient.addColorStop(0, 'rgba(226, 26, 26, 0.2)');
         gradient.addColorStop(1, 'rgba(226, 26, 26, 0)');
 
-        // Имитация динамики с выходом на текущий средний балл
         const trendData = [6.5, 6.8, 7.0, 7.2, parseFloat(currentAvg) - 0.5, parseFloat(currentAvg)];
 
         new Chart(ctx, {
@@ -171,7 +261,9 @@ class AdminDashboard {
         const csvRows = [headers.join(';')];
 
         this.surveys.forEach(survey => {
-            const date = new Date(survey.timestamp).toLocaleDateString('ru-RU');
+            const date = new Date(survey.timestamp).toLocaleDateString('ru-RU', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
             csvRows.push([
                 survey.user.fullName,
                 survey.user.department,
@@ -180,11 +272,12 @@ class AdminDashboard {
             ].join(';'));
         });
 
+        // Добавляем BOM для правильного отображения кириллицы в Excel
         const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.join('\n');
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "survey_results.csv");
+        link.setAttribute("download", "rzd_survey_results.csv");
         document.body.appendChild(link);
         link.click();
         link.remove();
