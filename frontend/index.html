@@ -2,32 +2,26 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Опрос удовлетворенности работой в ОАО «РЖД»</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Доступные опросы | РЖД</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app">
-        <div class="splash-screen" id="splashScreen">
-            <div class="splash-content">
-                <div class="splash-logo-wrapper">
-                    <div class="splash-logo-circle">
-                        <img src="images/RZDlogo.png" alt="РЖД" class="splash-logo-img">
-                    </div>
-                </div>
-                <h1 class="splash-title">ОАО «РЖД»</h1>
-                <p class="splash-subtitle">Опрос удовлетворенности работой</p>
-                <div class="splash-loader">
-                    <div class="loader-bar"></div>
-                </div>
-                <p class="splash-loading-text">Загрузка...</p>
+    <header class="header">
+        <img src="images/RZDlogo.png" alt="РЖД" class="header-logo">
+        <div class="header-title">Центр опросов</div>
+        <button class="btn-ghost" id="logoutBtn">Выйти</button>
+    </header>
+    <main class="container">
+        <div class="survey-grid" id="surveyContainer">
+            <!-- Пример генерации карточки. В app.js этот блок создается динамически -->
+            <div class="survey-card">
+                <h3 class="survey-title">Удовлетворенность условиями труда</h3>
+                <p class="survey-desc">Пройдите ежеквартальный опрос для оценки качества рабочих мест и инфраструктуры.</p>
+                <button class="btn-action">Начать опрос</button>
             </div>
         </div>
-
-        <div class="main-content" id="mainContent" style="display: none;"></div>
-    </div>
-
-    <script src="departments.js"></script>
+    </main>
     <script src="app.js"></script>
 </body>
 </html>

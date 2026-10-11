@@ -2,55 +2,25 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход в панель администратора - Опрос РЖД</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Авторизация | Опросы РЖД</title>
     <link rel="stylesheet" href="login-styles.css">
 </head>
 <body>
-    <div class="login-container">
-        <a href="/index.html" class="btn-back">← Назад</a>
-        
-        <div class="login-card">
-            <div class="login-header">
-                <div class="login-logo-wrapper">
-                    <div class="login-logo-circle">
-                        <img src="images/RZDlogo.png" alt="РЖД" class="login-logo-img">
-                    </div>
-                </div>
-                <h1>Вход для администратора</h1>
-                <p>Опрос удовлетворенности работой в ОАО «РЖД»</p>
+    <div class="login-wrapper">
+        <img src="images/RZDlogo.png" alt="РЖД Логотип" class="logo-img">
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Табельный номер</label>
+                <input type="text" id="username" required placeholder="Введите логин">
             </div>
-            
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label for="username">Логин</label>
-                    <div class="input-group">
-                        <span class="input-icon">👤</span>
-                        <input type="text" id="username" placeholder="Введите логин" required>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Пароль</label>
-                    <div class="input-group">
-                        <span class="input-icon">🔒</span>
-                        <input type="password" id="password" placeholder="Введите пароль" required>
-                    </div>
-                </div>
-                
-                <div id="errorMessage" class="error-message" style="display: none;">
-                    Неверный логин или пароль
-                </div>
-                
-                <button type="submit" class="btn-login">Войти</button>
-            </form>
-            
-            <div class="login-footer">
-                <p>© ОАО «РЖД» 2026</p>
+            <div class="input-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" required placeholder="Введите пароль">
             </div>
-        </div>
+            <button type="submit" class="btn-submit">Войти в систему</button>
+        </form>
     </div>
-
     <script src="login.js"></script>
 </body>
 </html>

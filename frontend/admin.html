@@ -3,101 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Панель администратора - Опрос РЖД</title>
+    <title>Панель управления | РЖД Опросы</title>
     <link rel="stylesheet" href="admin-styles.css">
+    <!-- Подключение Chart.js для отрисовки графиков -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="admin-container">
-        <!-- Шапка -->
-        <header class="admin-header">
-            <div class="header-left">
-                <div class="admin-logo-wrapper">
-                    <div class="admin-logo-circle">
-                        <img src="images/RZDlogo.png" alt="РЖД" class="admin-logo-img">
-                    </div>
-                </div>
-                <div>
-                    <h1>Панель администратора</h1>
-                    <p>Аналитика удовлетворенности работой</p>
-                </div>
-            </div>
-            <div class="header-right">
-                <button class="btn-export" onclick="exportData()">📥 Экспорт данных</button>
-                <button class="btn-logout" onclick="logout()">🚪 Выйти</button>
-            </div>
+    <!-- Боковое меню -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="images/RZDlogo.png" alt="РЖД">
+            <span>Админ-панель</span>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active">Дашборд</li>
+            <li class="nav-item">Управление опросами</li>
+            <li class="nav-item">Сотрудники</li>
+            <li class="nav-item">Отчеты (Excel)</li>
+            <li class="nav-item" style="margin-top: auto; color: #E21A1A;">Выйти</li>
+        </ul>
+    </aside>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <header class="header">
+            <h1>Обзор удовлетворенности (Q3 2026)</h1>
         </header>
 
-        <!-- Сводные метрики -->
-        <div class="metrics-grid" id="metrics">
-            <div class="metric-card">
-                <div class="metric-icon">👥</div>
-                <div class="metric-info">
-                    <h3>Всего опросов</h3>
-                    <p class="metric-value" id="totalSurveys">0</p>
+        <!-- Ключевые метрики -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Пройдено опросов</h3>
+                <div class="value">12,450</div>
+            </div>
+            <div class="card">
+                <h3>Общий индекс eNPS</h3>
+                <div class="value" style="color: #38A169;">+42</div>
+            </div>
+            <div class="card">
+                <h3>Вовлеченность</h3>
+                <div class="value">87%</div>
+            </div>
+        </div>
+
+        <!-- Блок с графиками -->
+        <div class="analytics-grid">
+            <div class="card">
+                <h3>Динамика удовлетворенности</h3>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
                 </div>
             </div>
-            <div class="metric-card">
-                <div class="metric-icon">⭐</div>
-                <div class="metric-info">
-                    <h3>Средний балл</h3>
-                    <p class="metric-value" id="averageScore">0/10</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-icon">⚠️</div>
-                <div class="metric-info">
-                    <h3>Красные зоны</h3>
-                    <p class="metric-value" id="dangerZonesCount">0</p>
-                </div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-icon">📈</div>
-                <div class="metric-info">
-                    <h3>Удовлетворенность</h3>
-                    <p class="metric-value" id="satisfactionPercent">0%</p>
+            <div class="card">
+                <h3>Оценка по категориям</h3>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Графики -->
-        <div class="charts-grid">
-            <div class="chart-card">
-                <h3>📊 Оценки по факторам</h3>
-                <canvas id="factorsChart"></canvas>
-            </div>
-            <div class="chart-card">
-                <h3>📈 Динамика опросов</h3>
-                <canvas id="trendChart"></canvas>
-            </div>
+        <!-- Таблица последних опросов -->
+        <div class="card" style="margin-top: 24px;">
+            <h3>Активные кампании</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Название опроса</th>
+                        <th>Подразделение</th>
+                        <th>Участие</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="adminSurveysTable">
+                    <tr>
+                        <td><strong>Условия труда локомотивных бригад</strong></td>
+                        <td>Дирекция тяги</td>
+                        <td>84% (4,200 чел.)</td>
+                        <td><span class="status active">Активен</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Оценка руководителей среднего звена</strong></td>
+                        <td>Аппарат управления</td>
+                        <td>92% (850 чел.)</td>
+                        <td><span class="status active">Активен</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Качество ДМС 2025</strong></td>
+                        <td>Все подразделения</td>
+                        <td>100%</td>
+                        <td><span class="status closed">Завершен</span></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-
-        <!-- Красные зоны -->
-        <div class="danger-zones-section" id="dangerZonesSection">
-            <h2>🚨 Факторы в красной зоне (менее 50%)</h2>
-            <div id="dangerZonesList"></div>
-        </div>
-
-        <!-- Список опросов -->
-        <div class="surveys-section">
-            <h2>📋 Список опросов</h2>
-            <div class="surveys-table-container">
-                <table class="surveys-table" id="surveysTable">
-                    <thead>
-                        <tr>
-                            <th>Работник</th>
-                            <th>Предприятие</th>
-                            <th>Средний балл</th>
-                            <th>Дата</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="surveysTableBody">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    </main>
 
     <script src="admin.js"></script>
 </body>

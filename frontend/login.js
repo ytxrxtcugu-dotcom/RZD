@@ -1,4 +1,4 @@
-// Роли и пути для отображения (пароли не хранятся здесь)
+// Роли и пути для отображения
 const ADMIN_ROLES = {
     'admin': { role: 'superadmin', path: [] },
     'tranenergo': { role: 'filial', path: ['Трансэнерго'] },
@@ -31,12 +31,18 @@ const ADMIN_ROLES = {
 async function handleLogin(event) {
     event.preventDefault();
     
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
+    const usernameField = document.getElementById('username');
+    const passwordField = document.getElementById('password');
     const errorMessage = document.getElementById('errorMessage');
     
+    if (!usernameField || !passwordField) return;
+
+    const username = usernameField.value.trim();
+    const password = passwordField.value;
+    
     try {
-        const response = await fetch('https://rzd-survey.duckdns.org/api/login', {
+        // Запрос отправляется на локальный бэкенд через относительный путь
+        const response = await fetch('/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -50,27 +56,21 @@ async function handleLogin(event) {
             sessionStorage.setItem('adminLoggedIn', 'true');
             sessionStorage.setItem('adminUsername', username);
             
-            // Получаем роль и путь
             const roleInfo = ADMIN_ROLES[username] || { role: 'local', path: [username] };
             sessionStorage.setItem('adminRole', roleInfo.role);
             sessionStorage.setItem('adminPath', JSON.stringify(roleInfo.path));
             
             window.location.href = '/admin.html';
         } else {
-            errorMessage.style.display = 'block';
-            setTimeout(() => errorMessage.style.display = 'none', 3000);
-            document.getElementById('password').value = '';
-            document.getElementById('password').focus();
+            if (errorMessage) {
+                errorMessage.style.display = 'block';
+                setTimeout(() => errorMessage.style.display = 'none', 3000);
+            }
+            passwordField.value = '';
+            passwordField.focus();
         }
     } catch (error) {
         console.error('Ошибка входа:', error);
         alert('Ошибка подключения к серверу');
     }
 }
-
-function checkAuth() {
-    // Не автоматически перенаправлять — пусть пользователь сам войдет
-    // Если нужно выйти, пользователь нажмет кнопку "Выйти"
-}
-
-checkAuth();
