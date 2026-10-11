@@ -26,6 +26,7 @@ class AdminDashboard {
         this.charts = {};
         this.loadError = '';
         this.query = '';
+        this.periodDays = 90;
         this.token = sessionStorage.getItem('adminToken') || '';
         this.init();
     }
@@ -116,6 +117,11 @@ class AdminDashboard {
             this.query = e.target.value.trim().toLowerCase();
             this.renderEmployeesTable();
         });
+        document.getElementById('periodFilter').addEventListener('change', (e) => {
+            this.periodDays = e.target.value === 'all' ? 'all' : Number(e.target.value);
+            this.renderDashboard();
+            this.renderEmployeesTable();
+        });
     }
 
     async fetchData() {
@@ -141,29 +147,78 @@ class AdminDashboard {
 
     score(survey) { return parseFloat(survey.averageScore); }
 
+    currentSurveys() {
+        if (this.periodDays === 'all') return this.surveys;
+        const now = Date.now();
+        const cutoff = now - this.periodDays * 24 * 60 * 60 * 1000;
+        return this.surveys.filter((s) => {
+            const time = new Date(s.timestamp).getTime();
+            return Number.isFinite(time) && time >= cutoff && time <= now;
+        });
+    }
+
+    previousPeriodSurveys() {
+        if (this.periodDays === 'all') return [];
+        const now = Date.now();
+        const duration = this.periodDays * 24 * 60 * 60 * 1000;
+        const end = now - duration;
+        const start = end - duration;
+        return this.surveys.filter((s) => {
+            const time = new Date(s.timestamp).getTime();
+            return Number.isFinite(time) && time >= start && time < end;
+        });
+    }
+
+    averageScore(surveys) {
+        const valid = surveys.map((s) => this.score(s)).filter(Number.isFinite);
+        return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
+    }
+
     renderDashboard() {
-        const valid = this.surveys.filter((s) => !Number.isNaN(this.score(s)));
-        document.getElementById('totalSurveys').textContent = this.surveys.length;
+        const surveys = this.currentSurveys();
+        const valid = surveys.filter((s) => Number.isFinite(this.score(s)));
+        document.getElementById('totalSurveys').textContent = surveys.length;
 
-        const avg = valid.length ? valid.reduce((sum, s) => sum + this.score(s), 0) / valid.length : 0;
-        document.getElementById('avgCompanyScore').textContent = avg.toFixed(1);
+        const avg = this.averageScore(surveys);
+        document.getElementById('avgCompanyScore').textContent = avg === null ? '—' : avg.toFixed(1);
 
-        // Пороги: промоутеры ≥ 9, критики ≤ 6. [ТРЕБУЕТСЯ ПРОВЕРКА обоснования порогов]
+        // Внутренний индекс на основе среднего балла анкеты, а не классический eNPS.
         const promoters = valid.filter((s) => this.score(s) >= 9).length;
         const detractors = valid.filter((s) => this.score(s) <= 6).length;
-        const enps = valid.length ? Math.round(((promoters - detractors) / valid.length) * 100) : 0;
-        const enpsEl = document.getElementById('enpsScore');
-        enpsEl.textContent = enps > 0 ? `+${enps}` : String(enps);
-        enpsEl.style.color = enps >= 20 ? 'var(--ok)' : (enps > 0 ? 'var(--warn)' : 'var(--bad)');
+        const index = valid.length ? Math.round(((promoters - detractors) / valid.length) * 100) : null;
+        const indexEl = document.getElementById('enpsScore');
+        indexEl.textContent = index === null ? '—' : (index > 0 ? `+${index}` : String(index));
+        indexEl.style.color = index === null ? '' : (index >= 20 ? 'var(--ok)' : (index > 0 ? 'var(--warn)' : 'var(--bad)'));
+
+        let low = 0, totalRatings = 0;
+        surveys.forEach((survey) => Object.values(survey.ratings || {}).forEach((value) => {
+            const rating = Number(value);
+            if (!Number.isFinite(rating)) return;
+            totalRatings++;
+            if (rating >= 0 && rating <= 4) low++;
+        }));
+        document.getElementById('lowScoreShare').textContent = totalRatings ? `${Math.round(low / totalRatings * 100)}%` : '—';
+
+        const previous = this.averageScore(this.previousPeriodSurveys());
+        const changeEl = document.getElementById('avgChange');
+        if (this.periodDays === 'all' || avg === null || previous === null) {
+            changeEl.textContent = '—';
+            changeEl.style.color = '';
+        } else {
+            const change = avg - previous;
+            changeEl.textContent = `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
+            changeEl.style.color = change > 0 ? 'var(--ok)' : (change < 0 ? 'var(--bad)' : '');
+        }
 
         this.calculateAdvancedMetrics();
         this.initTrendChart();
         this.initRadarChart();
+        this.initDistributionChart();
     }
 
     factorAverages() {
         const sums = {};
-        this.surveys.forEach((s) => {
+        this.currentSurveys().forEach((s) => {
             if (!s.ratings) return;
             Object.entries(s.ratings).forEach(([index, score]) => {
                 const v = parseInt(score, 10);
@@ -178,7 +233,7 @@ class AdminDashboard {
 
     calculateAdvancedMetrics() {
         const deptScores = {};
-        this.surveys.forEach((s) => {
+        this.currentSurveys().forEach((s) => {
             const dept = s.user?.department;
             const key = s.user?.departmentPath || dept;
             const v = this.score(s);
@@ -205,7 +260,7 @@ class AdminDashboard {
     }
 
     buildTrend() {
-        const parsed = this.surveys
+        const parsed = this.currentSurveys()
             .map((s) => ({ d: new Date(s.timestamp), v: this.score(s) }))
             .filter((x) => !Number.isNaN(x.d.getTime()) && !Number.isNaN(x.v))
             .sort((a, b) => a.d - b.d);
@@ -293,10 +348,40 @@ class AdminDashboard {
         });
     }
 
+    initDistributionChart() {
+        if (typeof Chart === 'undefined') return;
+        const ranges = [
+            { label: '0–4', min: 0, max: 4 },
+            { label: '5–6', min: 5, max: 6 },
+            { label: '7–8', min: 7, max: 8 },
+            { label: '9–10', min: 9, max: 10 }
+        ];
+        const counts = [0, 0, 0, 0];
+        this.currentSurveys().forEach((survey) => Object.values(survey.ratings || {}).forEach((value) => {
+            const rating = Number(value);
+            if (!Number.isInteger(rating) || rating < 0 || rating > 10) return;
+            const index = ranges.findIndex((range) => rating >= range.min && rating <= range.max);
+            if (index >= 0) counts[index]++;
+        }));
+        this.charts.distribution?.destroy();
+        this.charts.distribution = new Chart(document.getElementById('distributionChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ranges.map((range) => range.label),
+                datasets: [{ label: 'Количество оценок', data: counts, borderRadius: 6, backgroundColor: ['#D94848', '#D9A441', '#7894B8', '#3B9875'] }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Оценок: ${context.parsed.y}` } } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+
     renderEmployeesTable() {
         const tbody = document.getElementById('employeesTableBody');
         const q = this.query;
-        const rows = this.surveys.filter((s) => {
+        const rows = this.currentSurveys().filter((s) => {
             if (!q) return true;
             return `${s.user?.fullName ?? ''} ${s.user?.department ?? ''}`.toLowerCase().includes(q);
         });
@@ -334,7 +419,7 @@ class AdminDashboard {
         };
         const rows = [['ФИО', 'Подразделение', 'Полный путь', 'Средний балл', 'Дата прохождения'].map(cell).join(';')];
 
-        this.surveys.forEach((survey) => {
+        this.currentSurveys().forEach((survey) => {
             const date = new Date(survey.timestamp).toLocaleDateString('ru-RU', {
                 day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
