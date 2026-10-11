@@ -34,7 +34,7 @@ function logout() {
 }
 
 function exportData() {
-    fetch('http://212.113.99.102:3000/api/surveys')
+    fetch('https://rzd-survey.duckdns.org/api/surveys')
         .then(response => response.json())
         .then(surveys => {
             const role = sessionStorage.getItem('adminRole');
@@ -104,7 +104,7 @@ class AdminPanel {
 
     async loadSurveys() {
         try {
-            const response = await fetch('http://212.113.99.102:3000/api/surveys');
+            const response = await fetch('https://rzd-survey.duckdns.org/api/surveys');
             let surveys = await response.json();
             
             const role = sessionStorage.getItem('adminRole');

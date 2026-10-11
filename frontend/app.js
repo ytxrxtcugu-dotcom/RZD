@@ -20,10 +20,45 @@ class SurveyApp {
     constructor() {
         this.ratings = {};
         this.currentUser = null;
-        this.currentPath = [];
-        this.selectedDepartmentPath = [];
-        this.selectedDepartment = null;
+        this.online = navigator.onLine;
         this.init();
+        this.setupOnlineCheck();
+    }
+
+    setupOnlineCheck() {
+        window.addEventListener('online', () => {
+            this.online = true;
+            this.hideOfflineBanner();
+        });
+        
+        window.addEventListener('offline', () => {
+            this.online = false;
+            this.showOfflineBanner();
+        });
+    }
+
+    showOfflineBanner() {
+        let banner = document.getElementById('offlineBanner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'offlineBanner';
+            banner.className = 'offline-banner';
+            banner.innerHTML = `
+                <div class="offline-banner-content">
+                    <span class="offline-icon">📡</span>
+                    <span>Нет подключения к интернету</span>
+                </div>
+            `;
+            document.body.appendChild(banner);
+        }
+        banner.style.display = 'block';
+    }
+
+    hideOfflineBanner() {
+        const banner = document.getElementById('offlineBanner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
     }
 
     init() {
@@ -387,8 +422,12 @@ class SurveyApp {
     }
 
     async saveResults(results) {
+        if (!navigator.onLine) {
+        alert('Нет подключения к интернету. Проверьте соединение.');
+        return;
+    }
         try {
-            const response = await fetch('http://212.113.99.102:3000/api/surveys', {
+            const response = await fetch('https://rzd-survey.duckdns.org/api/surveys', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

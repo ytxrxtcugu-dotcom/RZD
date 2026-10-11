@@ -1,0 +1,11 @@
+node_modules/
+android/
+ios/
+ios-build/
+.gradle/
+build/
+*.apk
+*.ipa
+.env
+.DS_Store
+*.log

@@ -717,4 +717,34 @@ input[type="text"]:focus {
         width: 55px;
         height: 55px;
     }
+    .offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #f44336;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    z-index: 10000;
+    display: none;
+    animation: slideDown 0.3s;
+}
+
+.offline-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.offline-icon {
+    font-size: 20px;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
 }
