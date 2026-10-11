@@ -2,32 +2,60 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0A0C0F">
     <title>Авторизация | Опросы РЖД</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap">
+    <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="login-styles.css">
 </head>
-<body>
-    <div class="login-wrapper">
-        <img src="images/RZDlogo.png" alt="РЖД Логотип" class="logo-img">
-        <form id="loginForm">
-            <div class="input-group">
-                <label for="fullName">ФИО сотрудника</label>
-                <input type="text" id="fullName" required placeholder="Иванов Иван Иванович">
+<body class="login-page">
+    <main class="auth">
+        <section class="auth-hero">
+            <svg class="rails" viewBox="0 0 600 820" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+                <path class="rails__rail" d="M300 260 L-60 820"/>
+                <path class="rails__rail" d="M300 260 L660 820"/>
+                <path class="rails__tie" d="M268 300H332M236 340H364M196 390H404M148 450H452M91 520H509M26 600H574M-54 700H654M-143 810H743"/>
+            </svg>
+            <span class="eyebrow">ОАО «РЖД»</span>
+            <div>
+                <p class="auth-hero__title">Опрос удовлетворенности работой</p>
+                <ul class="auth-hero__meta">
+                    <li><strong>14</strong><span>факторов оценки</span></li>
+                    <li><strong>0–10</strong><span>баллов по каждому</span></li>
+                </ul>
             </div>
-            <div class="input-group">
-                <label>Предприятие / Подразделение</label>
-                <button type="button" class="btn-select" onclick="app.openDepartmentModal()">
-                    <span id="selectedDepartmentText" style="color: var(--text-muted);">Выберите из списка...</span>
-                    <svg style="width:20px;height:20px;color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/></svg>
-                </button>
+        </section>
+
+        <section class="auth-panel">
+            <div class="auth-card">
+                <img src="images/RZDlogo.png" alt="РЖД Логотип" class="logo-img">
+                <h1 class="auth-title">Авторизация</h1>
+
+                <form id="loginForm">
+                    <div class="field">
+                        <label for="fullName">ФИО сотрудника</label>
+                        <input type="text" id="fullName" name="fullName" required autocomplete="name" placeholder="Иванов Иван Иванович">
+                    </div>
+                    <div class="field">
+                        <span class="field-label" id="deptLabel">Предприятие / Подразделение</span>
+                        <button type="button" class="select-trigger" id="departmentTrigger" aria-haspopup="dialog" aria-labelledby="deptLabel selectedDepartmentText">
+                            <span id="selectedDepartmentText" class="is-placeholder">Выберите из списка...</span>
+                            <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                    <button type="submit" class="btn-submit">Войти к тестам</button>
+                </form>
+
+                <div class="auth-footer">
+                    <a href="admin.html" class="btn-admin-link">Вход для администратора</a>
+                </div>
             </div>
-            <button type="submit" class="btn-submit">Войти к тестам</button>
-        </form>
-        
-        <div class="admin-footer">
-            <a href="admin.html" class="btn-admin-link">Вход для администратора</a>
-        </div>
-    </div>
+        </section>
+    </main>
+    <script src="departments.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

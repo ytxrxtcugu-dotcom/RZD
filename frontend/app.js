@@ -1,3 +1,5 @@
+const SURVEY_API = 'http://212.113.99.102:3000/api/surveys';
+
 const surveyFactors = [
     "Состояние рабочего места", "Обеспеченность ресурсами", "Режим труда",
     "Уровень заработной платы", "Зависимость оплаты труда от результатов работы",
@@ -8,52 +10,78 @@ const surveyFactors = [
     "Информирование сотрудников"
 ];
 
+const SVG_ATTR = 'class="icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"';
 const ICONS = {
-    user: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-    arrowLeft: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>`,
-    chevronRight: `<svg style="width:20px;height:20px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/></svg>`,
-    close: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6 6 18M6 6l12 12"/></svg>`,
-    checkCircle: `<svg style="width:100%;height:100%" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 4L12 14.01l-3-3"/></svg>`
+    arrowLeft: `<svg ${SVG_ATTR}><path d="m15 18-6-6 6-6"/></svg>`,
+    arrowRight: `<svg ${SVG_ATTR}><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+    chevronRight: `<svg ${SVG_ATTR}><path d="m9 18 6-6-6-6"/></svg>`,
+    close: `<svg ${SVG_ATTR}><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+    checkCircle: `<svg class="icon icon--fill" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7.8 12.4 2.9 2.9 5.6-6.3"/></svg>`
 };
+
+const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+));
 
 class SurveyApp {
     constructor() {
         this.ratings = {};
         this.currentUser = null;
         this.selectedDepartment = null;
+        this.confirmedPath = [];
+        this.currentPath = [];
+        this.selectedDepartmentPath = [];
+        this.searchQuery = '';
+        this.lastFocus = null;
+        this._onKey = null;
         this.init();
     }
 
     init() {
         const loginForm = document.getElementById('loginForm');
         const surveyContainer = document.getElementById('surveyContainer');
-
-        if (loginForm) {
-            this.initLoginPage(loginForm);
-        } else if (surveyContainer) {
-            this.initMainPage();
-        }
+        if (loginForm) this.initLoginPage(loginForm);
+        else if (surveyContainer) this.initMainPage();
     }
 
+    showToast(message) {
+        document.querySelector('.toast')?.remove();
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.setAttribute('role', 'status');
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('is-leaving'), 3200);
+        setTimeout(() => toast.remove(), 3600);
+    }
+
+    // ================= СТРАНИЦА ВХОДА ================= //
     initLoginPage(loginForm) {
         if (sessionStorage.getItem('userLoggedIn') === 'true') {
             window.location.href = 'index.html';
             return;
         }
 
+        document.getElementById('departmentTrigger')
+            .addEventListener('click', () => this.openDepartmentModal());
+
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const fullName = document.getElementById('fullName').value.trim();
             const department = this.selectedDepartment;
-            
+
             if (!department) {
-                alert('Пожалуйста, выберите подразделение из списка');
+                this.showToast('Пожалуйста, выберите подразделение из списка');
+                document.getElementById('departmentTrigger').focus();
                 return;
             }
-
-            if (fullName && department) {
+            if (fullName) {
                 sessionStorage.setItem('userLoggedIn', 'true');
-                sessionStorage.setItem('userData', JSON.stringify({ fullName, department }));
+                sessionStorage.setItem('userData', JSON.stringify({
+                    fullName,
+                    department,
+                    departmentPath: this.confirmedPath.join(' / ')
+                }));
                 window.location.href = 'index.html';
             }
         });
@@ -61,102 +89,172 @@ class SurveyApp {
 
     // ================= МОДАЛКА ВЫБОРА ПОДРАЗДЕЛЕНИЯ ================= //
     openDepartmentModal() {
+        if (document.getElementById('departmentModal')) return;
+        this.lastFocus = document.activeElement;
+
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
         modal.id = 'departmentModal';
         modal.innerHTML = `
-            <div class="modal-surface">
+            <div class="modal-surface" role="dialog" aria-modal="true" aria-labelledby="departmentModalTitle" tabindex="-1">
                 <div class="modal-header">
-                    <h2>Подразделение</h2>
-                    <button class="btn-ghost" style="padding: 4px;" onclick="app.closeDepartmentModal()">
-                        ${ICONS.close}
-                    </button>
+                    <h2 id="departmentModalTitle">Подразделение</h2>
+                    <button type="button" class="icon-btn" data-action="close" aria-label="Закрыть">${ICONS.close}</button>
                 </div>
-                <div class="breadcrumbs" id="breadcrumbs"></div>
+                <div class="modal-search">
+                    <input type="search" id="departmentSearch" placeholder="Поиск на этом уровне" aria-label="Поиск на этом уровне" autocomplete="off">
+                </div>
+                <nav class="breadcrumbs" id="breadcrumbs" aria-label="Путь по структуре"></nav>
                 <div class="modal-body" id="departmentList"></div>
                 <div class="modal-footer">
-                    <button class="btn-ghost" onclick="app.closeDepartmentModal()">Отмена</button>
-                    <button class="btn-primary-small" onclick="app.confirmDepartment()">Выбрать</button>
+                    <button type="button" class="btn-ghost" data-action="close">Отмена</button>
+                    <button type="button" class="btn-primary-small" id="departmentConfirm" disabled>Выбрать</button>
                 </div>
-            </div>
-        `;
+            </div>`;
         document.body.appendChild(modal);
+        document.body.classList.add('is-locked');
+
         this.currentPath = [];
         this.selectedDepartmentPath = [];
+        this.searchQuery = '';
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.closest('[data-action="close"]')) this.closeDepartmentModal();
+        });
+        modal.querySelector('#departmentConfirm').addEventListener('click', () => this.confirmDepartment());
+        modal.querySelector('#departmentSearch').addEventListener('input', (e) => {
+            this.searchQuery = e.target.value.trim().toLowerCase();
+            this.renderDepartmentLevel();
+        });
+
+        this._onKey = (e) => {
+            if (e.key === 'Escape') { this.closeDepartmentModal(); return; }
+            if (e.key === 'Tab') this.trapFocus(e, modal);
+        };
+        document.addEventListener('keydown', this._onKey);
+
         this.renderDepartmentLevel();
+        modal.querySelector('.modal-surface').focus();
     }
 
     closeDepartmentModal() {
-        const modal = document.getElementById('departmentModal');
-        if (modal) modal.remove();
+        document.getElementById('departmentModal')?.remove();
+        document.body.classList.remove('is-locked');
+        if (this._onKey) document.removeEventListener('keydown', this._onKey);
+        this._onKey = null;
+        if (this.lastFocus && typeof this.lastFocus.focus === 'function') this.lastFocus.focus();
+    }
+
+    trapFocus(e, modal) {
+        const nodes = [...modal.querySelectorAll('button:not([disabled]), input')];
+        if (!nodes.length) return;
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+
+    getLevelEntries() {
+        // rzdStructure берётся из departments.js
+        let data = typeof rzdStructure !== 'undefined' ? rzdStructure : {};
+        for (const key of this.currentPath) data = data[key];
+        if (Array.isArray(data)) return data.map((label) => ({ label, hasChildren: false }));
+        return Object.keys(data).map((label) => ({
+            label,
+            hasChildren: typeof data[label] === 'object' && data[label] !== null && Object.keys(data[label]).length > 0
+        }));
     }
 
     renderDepartmentLevel() {
-        const listContainer = document.getElementById('departmentList');
-        const breadcrumbs = document.getElementById('breadcrumbs');
-        
-        breadcrumbs.innerHTML = '';
-        if (this.currentPath.length > 0) {
-            breadcrumbs.innerHTML = `<span class="breadcrumb-link" onclick="app.navigateTo(-1)">ОАО «РЖД»</span>`;
-            this.currentPath.forEach((item, index) => {
-                breadcrumbs.innerHTML += ` <span style="color: var(--text-muted)">/</span> <span class="breadcrumb-link" onclick="app.navigateTo(${index})">${item}</span>`;
-            });
-        } else {
-            breadcrumbs.innerHTML = `<span>ОАО «РЖД»</span>`;
+        const list = document.getElementById('departmentList');
+        const crumbs = document.getElementById('breadcrumbs');
+        if (!list || !crumbs) return;
+
+        crumbs.replaceChildren();
+        const makeCrumb = (text, index) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'breadcrumb-link';
+            b.textContent = text;
+            b.addEventListener('click', () => this.navigateTo(index));
+            return b;
+        };
+        const sep = () => {
+            const s = document.createElement('span');
+            s.className = 'breadcrumbs__sep';
+            s.textContent = '/';
+            s.setAttribute('aria-hidden', 'true');
+            return s;
+        };
+        crumbs.appendChild(makeCrumb('ОАО «РЖД»', -1));
+        this.currentPath.forEach((item, index) => { crumbs.appendChild(sep()); crumbs.appendChild(makeCrumb(item, index)); });
+
+        const q = this.searchQuery;
+        const entries = this.getLevelEntries().filter((e) => !q || e.label.toLowerCase().includes(q));
+        list.replaceChildren();
+
+        if (!entries.length) {
+            const p = document.createElement('p');
+            p.className = 'modal-empty';
+            p.textContent = 'Ничего не найдено';
+            list.appendChild(p);
         }
-        
-        // rzdStructure берется из глобальной области (внешний файл данных)
-        let data = typeof rzdStructure !== 'undefined' ? rzdStructure : {};
-        for (let i = 0; i < this.currentPath.length; i++) {
-            data = data[this.currentPath[i]];
-        }
-        
-        listContainer.innerHTML = '';
-        
-        if (typeof data === 'object' && !Array.isArray(data)) {
-            Object.keys(data).forEach(key => {
-                const hasChildren = typeof data[key] === 'object' && Object.keys(data[key]).length > 0;
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'list-item';
-                
-                if (hasChildren) {
-                    itemDiv.innerHTML = `<span>${key}</span> <span style="color: var(--text-muted)">${ICONS.chevronRight}</span>`;
-                    itemDiv.onclick = () => {
-                        this.currentPath.push(key);
-                        this.selectedDepartmentPath = [];
-                        this.renderDepartmentLevel();
-                    };
-                } else {
-                    itemDiv.innerHTML = `<span>${key}</span>`;
-                    itemDiv.onclick = () => {
-                        this.selectedDepartmentPath = [...this.currentPath, key];
-                        this.highlightSelected(itemDiv);
-                    };
-                }
-                listContainer.appendChild(itemDiv);
-            });
-        } else if (Array.isArray(data)) {
-            data.forEach(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'list-item';
-                itemDiv.innerHTML = `<span>${item}</span>`;
-                itemDiv.onclick = () => {
-                    this.selectedDepartmentPath = [...this.currentPath, item];
-                    this.highlightSelected(itemDiv);
-                };
-                listContainer.appendChild(itemDiv);
-            });
-        }
+
+        const selectedKey = this.selectedDepartmentPath.join('\u0001');
+        entries.forEach((entry) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'list-item';
+            const label = document.createElement('span');
+            label.textContent = entry.label;
+            btn.appendChild(label);
+
+            if (entry.hasChildren) {
+                const chev = document.createElement('span');
+                chev.className = 'list-item__chevron';
+                chev.innerHTML = ICONS.chevronRight;
+                btn.appendChild(chev);
+                btn.addEventListener('click', () => {
+                    this.currentPath.push(entry.label);
+                    this.selectedDepartmentPath = [];
+                    this.resetSearch();
+                    this.renderDepartmentLevel();
+                    list.scrollTop = 0;
+                });
+            } else {
+                const path = [...this.currentPath, entry.label];
+                if (path.join('\u0001') === selectedKey) btn.classList.add('selected');
+                btn.addEventListener('click', () => {
+                    this.selectedDepartmentPath = path;
+                    this.highlightSelected(btn);
+                });
+            }
+            list.appendChild(btn);
+        });
+        this.updateConfirmState();
+    }
+
+    resetSearch() {
+        this.searchQuery = '';
+        const input = document.getElementById('departmentSearch');
+        if (input) input.value = '';
     }
 
     highlightSelected(element) {
-        document.querySelectorAll('.list-item').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('#departmentList .list-item').forEach((el) => el.classList.remove('selected'));
         element.classList.add('selected');
+        this.updateConfirmState();
+    }
+
+    updateConfirmState() {
+        const btn = document.getElementById('departmentConfirm');
+        if (btn) btn.disabled = this.selectedDepartmentPath.length === 0;
     }
 
     navigateTo(index) {
         this.currentPath = index === -1 ? [] : this.currentPath.slice(0, index + 1);
         this.selectedDepartmentPath = [];
+        this.resetSearch();
         this.renderDepartmentLevel();
     }
 
@@ -165,157 +263,201 @@ class SurveyApp {
             const department = this.selectedDepartmentPath[this.selectedDepartmentPath.length - 1];
             const textEl = document.getElementById('selectedDepartmentText');
             textEl.textContent = department;
-            textEl.style.color = 'var(--text-main)';
+            textEl.classList.remove('is-placeholder');
             this.selectedDepartment = department;
+            this.confirmedPath = [...this.selectedDepartmentPath];
         }
         this.closeDepartmentModal();
     }
-    // ================================================================ //
 
+    // ================= ГЛАВНАЯ СТРАНИЦА ================= //
     initMainPage() {
         if (sessionStorage.getItem('userLoggedIn') !== 'true') {
             window.location.href = 'login.html';
             return;
         }
-
-        this.currentUser = JSON.parse(sessionStorage.getItem('userData'));
-        
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                sessionStorage.clear();
-                window.location.href = 'login.html';
-            });
+        try { this.currentUser = JSON.parse(sessionStorage.getItem('userData')); }
+        catch { this.currentUser = null; }
+        if (!this.currentUser || !this.currentUser.fullName) {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+            return;
         }
 
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        this.renderUser();
         this.renderDashboard();
+    }
+
+    renderUser() {
+        const { fullName, departmentPath, department } = this.currentUser;
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        const given = parts.length >= 2 ? parts.slice(1).join(' ') : fullName;
+        const initials = parts.slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+
+        document.getElementById('userName').textContent = fullName;
+        document.getElementById('userAvatar').textContent = initials;
+        document.getElementById('userChip').hidden = false;
+        document.getElementById('heroTitle').textContent = `Здравствуйте, ${given}`;
+        document.getElementById('heroDept').textContent = departmentPath || department || '';
     }
 
     renderDashboard() {
         const container = document.getElementById('surveyContainer');
         if (!container) return;
-
+        container.className = 'survey-grid';
         const isCompleted = sessionStorage.getItem('surveyCompleted') === 'true';
 
         if (isCompleted) {
             container.innerHTML = `
-                <div class="survey-card" style="border-color: #38A169;">
+                <article class="survey-card survey-card--done">
+                    <span class="status-pill status-pill--done">Завершено</span>
                     <h3 class="survey-title">Удовлетворенность условиями труда</h3>
                     <p class="survey-desc">Вы уже прошли этот опрос. Спасибо за участие!</p>
-                    <div style="color: #38A169; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px;">${ICONS.checkCircle}</div> Завершено
-                    </div>
-                </div>
-            `;
+                </article>`;
         } else {
             container.innerHTML = `
-                <div class="survey-card">
+                <article class="survey-card">
+                    <span class="status-pill">Доступен</span>
                     <h3 class="survey-title">Удовлетворенность условиями труда</h3>
                     <p class="survey-desc">Опрос состоит из 14 ключевых факторов оценки рабочих мест и инфраструктуры.</p>
-                    <button class="btn-action" onclick="app.startSurvey()">Начать опрос</button>
-                </div>
-            `;
+                    <button type="button" class="btn-action" id="startSurveyBtn">Начать опрос ${ICONS.arrowRight}</button>
+                </article>`;
+            document.getElementById('startSurveyBtn').addEventListener('click', () => this.startSurvey());
         }
     }
 
+    showHome() {
+        document.getElementById('hero').hidden = false;
+        this.renderDashboard();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     startSurvey() {
-        const mainContainer = document.querySelector('main.container');
-        if (!mainContainer) return;
+        const container = document.getElementById('surveyContainer');
+        document.getElementById('hero').hidden = true;
+        container.className = '';
+        this.ratings = {};
 
         const factorsHTML = surveyFactors.map((factor, index) => `
-            <div class="survey-card" style="margin-bottom: 20px; padding: 24px;">
-                <div style="font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #1A202C;">
-                    ${index + 1}. ${factor}
+            <article class="factor" data-index="${index}">
+                <div class="factor__head">
+                    <span class="factor__num">${String(index + 1).padStart(2, '0')}</span>
+                    <h3 class="factor__title" id="factor-title-${index}">${esc(factor)}</h3>
                 </div>
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <input type="range" min="0" max="10" value="0" step="1" 
-                           style="flex-grow: 1; accent-color: #E21A1A; cursor: pointer;"
-                           onchange="app.updateRating(${index}, this.value)"
-                           oninput="app.updateRatingDisplay(${index}, this.value)">
-                    <div id="rating-${index}" style="font-size: 24px; font-weight: 700; color: #E21A1A; min-width: 40px; text-align: center;">0</div>
+                <div class="factor__control">
+                    <input class="slider" type="range" min="0" max="10" value="0" step="1"
+                           data-index="${index}" aria-labelledby="factor-title-${index}">
+                    <output class="factor__value" id="rating-${index}" aria-live="off">—</output>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; color: #718096; margin-top: 12px; font-weight: 500;">
-                    <span>Не удовлетворен</span>
-                    <span>Полностью удовлетворен</span>
-                </div>
-            </div>
-        `).join('');
+                <div class="factor__scale"><span>Не удовлетворен</span><span>Полностью удовлетворен</span></div>
+            </article>`).join('');
 
-        mainContainer.style.opacity = '0';
-        
-        setTimeout(() => {
-            mainContainer.innerHTML = `
-                <div style="margin-bottom: 32px;">
-                    <button class="btn-ghost" onclick="window.location.reload()" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;">
-                        ${ICONS.arrowLeft} Назад
-                    </button>
-                    <h2 style="margin: 0 0 8px 0; font-size: 28px; color: #1A202C;">Оценка факторов</h2>
-                    <p style="color: #718096; margin: 0; font-size: 15px;">Оцените каждый пункт от 0 до 10 баллов.</p>
+        container.innerHTML = `
+            <div class="survey-view">
+                <button type="button" class="btn-ghost" id="backBtn">${ICONS.arrowLeft} Назад</button>
+                <h1 class="survey-view__title">Оценка факторов</h1>
+                <p class="survey-view__lead">Оцените каждый пункт от 0 до 10 баллов.</p>
+
+                <div class="survey-bar">
+                    <span class="survey-bar__label" id="progressLabel">Оценено 0 из ${surveyFactors.length}</span>
+                    <div class="progress" id="progress" role="progressbar" aria-label="Прогресс опроса"
+                         aria-valuemin="0" aria-valuemax="${surveyFactors.length}" aria-valuenow="0">
+                        <div class="progress__fill" id="progressFill"></div>
+                    </div>
                 </div>
+
                 ${factorsHTML}
-                <div style="margin-top: 40px; text-align: left;">
-                    <button class="btn-action" onclick="app.completeSurvey()" style="padding: 16px 32px; font-size: 16px;">Закончить опрос</button>
+
+                <div class="survey-actions">
+                    <button type="button" class="btn-action" id="finishBtn">Закончить опрос</button>
                 </div>
-            `;
-            mainContainer.style.transition = 'opacity 0.3s ease';
-            mainContainer.style.opacity = '1';
-        }, 150);
+            </div>`;
 
-        this.ratings = {};
+        document.getElementById('backBtn').addEventListener('click', () => this.showHome());
+        document.getElementById('finishBtn').addEventListener('click', () => this.completeSurvey());
+        container.querySelectorAll('.slider').forEach((slider) => {
+            const handler = () => this.handleSlider(slider);
+            ['input', 'change', 'click'].forEach((ev) => slider.addEventListener(ev, handler));
+        });
+        window.scrollTo({ top: 0 });
     }
 
-    updateRating(index, value) {
-        this.ratings[index] = parseInt(value);
+    handleSlider(slider) {
+        const index = Number(slider.dataset.index);
+        const value = slider.value;
+        this.updateRating(index, value);
+        this.updateRatingDisplay(index, value);
+        slider.style.setProperty('--pct', `${Number(value) * 10}%`);
+        const card = slider.closest('.factor');
+        card.classList.add('is-rated');
+        card.classList.remove('is-missing');
+        this.updateProgress();
     }
+
+    updateRating(index, value) { this.ratings[index] = parseInt(value, 10); }
 
     updateRatingDisplay(index, value) {
         const display = document.getElementById(`rating-${index}`);
         if (display) display.textContent = value;
     }
 
+    updateProgress() {
+        const done = Object.keys(this.ratings).length;
+        const total = surveyFactors.length;
+        document.getElementById('progressLabel').textContent = `Оценено ${done} из ${total}`;
+        document.getElementById('progressFill').style.width = `${(done / total) * 100}%`;
+        document.getElementById('progress').setAttribute('aria-valuenow', String(done));
+    }
+
     async completeSurvey() {
-        if (Object.keys(this.ratings).length !== surveyFactors.length) {
-            alert('Пожалуйста, оцените все пункты перед отправкой.');
+        const unrated = surveyFactors.map((_, i) => i).filter((i) => !(i in this.ratings));
+        if (unrated.length) {
+            unrated.forEach((i) => document.querySelector(`.factor[data-index="${i}"]`)?.classList.add('is-missing'));
+            document.querySelector(`.factor[data-index="${unrated[0]}"]`)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            this.showToast('Пожалуйста, оцените все пункты перед отправкой');
             return;
         }
-        
+
         const totalScore = Object.values(this.ratings).reduce((a, b) => a + b, 0);
         const averageScore = (totalScore / surveyFactors.length).toFixed(1);
-        
         const results = {
             user: this.currentUser,
             ratings: this.ratings,
-            averageScore: averageScore,
+            averageScore,
             timestamp: new Date().toISOString()
         };
-        
+
+        const btn = document.getElementById('finishBtn');
+        btn.disabled = true;
         try {
-            const response = await fetch('http://212.113.99.102:3000/api/surveys', {
+            const response = await fetch(SURVEY_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(results)
             });
-            
-            if (response.ok) {
-                sessionStorage.setItem('surveyCompleted', 'true');
-                const mainContainer = document.querySelector('main.container');
-                
-                mainContainer.innerHTML = `
-                    <div class="survey-card" style="text-align: center; padding: 80px 24px;">
-                        <div style="color: #38A169; width: 80px; height: 80px; margin: 0 auto 24px;">
-                            ${ICONS.checkCircle}
-                        </div>
-                        <h2 style="color: #1A202C; margin-bottom: 16px; font-size: 24px;">Анкета успешно сохранена</h2>
-                        <p style="color: #718096; margin-bottom: 40px; font-size: 16px;">Сотрудник: <b>${this.currentUser.fullName}</b><br>Ваш средний балл: <strong style="color: #2D3748;">${results.averageScore}/10</strong></p>
-                        <button class="btn-ghost" onclick="window.location.reload()" style="padding: 12px 24px;">Вернуться на главную</button>
-                    </div>
-                `;
-            } else {
-                alert('Ошибка при сохранении данных на сервере.');
-            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            sessionStorage.setItem('surveyCompleted', 'true');
+            document.getElementById('surveyContainer').innerHTML = `
+                <div class="result">
+                    <div class="result__icon">${ICONS.checkCircle}</div>
+                    <h1 class="result__title">Анкета успешно сохранена</h1>
+                    <p class="result__who">Сотрудник: <b>${esc(this.currentUser.fullName)}</b></p>
+                    <p class="result__score">${esc(averageScore)}<small> / 10</small></p>
+                    <button type="button" class="btn-ghost" id="homeBtn">Вернуться на главную</button>
+                </div>`;
+            document.getElementById('homeBtn').addEventListener('click', () => this.showHome());
+            window.scrollTo({ top: 0 });
         } catch (error) {
             console.error('Ошибка:', error);
-            alert('Сбой сети. Проверьте подключение.');
+            this.showToast('Не удалось сохранить анкету. Проверьте подключение и повторите.');
+            btn.disabled = false;
         }
     }
 }

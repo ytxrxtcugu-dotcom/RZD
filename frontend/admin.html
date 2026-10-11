@@ -2,91 +2,99 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0A0C0F">
     <title>Панель управления | РЖД Опросы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap">
+    <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="admin-styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 </head>
-<body>
+<body class="admin-page">
     <!-- Экран авторизации администратора -->
     <div id="adminLoginScreen" class="admin-login-overlay">
         <div class="login-wrapper">
             <img src="images/RZDlogo.png" alt="РЖД Логотип" class="logo-img">
-            <h2 style="margin-top: 0; color: #1A202C;">Вход для администратора</h2>
+            <h1 class="login-title">Вход для администратора</h1>
             <form id="adminLoginForm">
-                <div class="input-group">
+                <div class="field">
                     <label for="adminUsername">Логин</label>
-                    <input type="text" id="adminUsername" required placeholder="Введите логин">
+                    <input type="text" id="adminUsername" required autocomplete="username" placeholder="Введите логин">
                 </div>
-                <div class="input-group">
+                <div class="field">
                     <label for="adminPassword">Пароль</label>
-                    <input type="password" id="adminPassword" required placeholder="Введите пароль">
+                    <input type="password" id="adminPassword" required autocomplete="current-password" placeholder="Введите пароль">
                 </div>
-                <div id="loginError" style="color: #E21A1A; font-size: 13px; margin-bottom: 16px; display: none;">Неверный логин или пароль</div>
+                <div id="loginError" class="form-error" role="alert">Неверный логин или пароль</div>
                 <button type="submit" class="btn-submit">Войти в панель</button>
             </form>
-            <div style="margin-top: 24px;">
-                <a href="login.html" style="color: #718096; text-decoration: none; font-size: 14px;">Вернуться к опросам сотрудников</a>
-            </div>
+            <a href="login.html" class="login-back">Вернуться к опросам сотрудников</a>
         </div>
     </div>
 
     <!-- Основной интерфейс (скрыт до авторизации) -->
-    <div id="adminApp" style="display: none; width: 100%; height: 100%;">
+    <div id="adminApp" class="admin-shell">
         <aside class="sidebar">
             <div class="brand">
-                <img src="images/RZDlogo.png" alt="РЖД">
-                <span>Админ-панель</span>
+                <span class="brand__logo"><img src="images/RZDlogo.png" alt="РЖД"></span>
+                <span class="brand__name">Админ-панель</span>
             </div>
-            <ul class="nav-menu">
-                <li class="nav-item active" data-target="dashboard">Дашборд</li>
-                <li class="nav-item" data-target="employees">Результаты сотрудников</li>
-                <li class="nav-item" id="exportBtn">Выгрузка (Excel)</li>
-                <li class="nav-item" id="logoutBtn" style="margin-top: auto; color: #E21A1A;">Выйти</li>
-            </ul>
+            <nav aria-label="Разделы">
+                <ul class="nav-menu">
+                    <li><button type="button" class="nav-item active" data-target="dashboard">Дашборд</button></li>
+                    <li><button type="button" class="nav-item" data-target="employees">Результаты сотрудников</button></li>
+                    <li><button type="button" class="nav-item" id="exportBtn">Выгрузка (Excel)</button></li>
+                    <li class="nav-menu__end"><button type="button" class="nav-item nav-item--danger" id="logoutBtn">Выйти</button></li>
+                </ul>
+            </nav>
         </aside>
 
         <main class="main-content">
+            <div id="demoBanner" class="banner" role="status" hidden>
+                Сервер недоступен. Показаны демонстрационные данные, это не результаты опроса.
+            </div>
+
             <div id="view-dashboard" class="view-section active">
                 <header class="header">
                     <h1>Обзор удовлетворенности</h1>
                 </header>
 
-                <div class="dashboard-grid">
+                <div class="kpi-grid">
                     <div class="card">
                         <h3>Пройдено опросов</h3>
                         <div class="value" id="totalSurveys">0</div>
                     </div>
                     <div class="card">
                         <h3>Средний балл</h3>
-                        <div class="value" id="avgCompanyScore" style="color: #38A169;">0.0</div>
+                        <div class="value" id="avgCompanyScore">0.0</div>
                     </div>
                     <div class="card">
                         <h3>Индекс eNPS</h3>
                         <div class="value" id="enpsScore">+0</div>
                     </div>
+                </div>
+
+                <div class="insight-grid">
                     <div class="card">
                         <h3>Лучшее подразделение</h3>
-                        <div class="value" id="topDepartment" style="font-size: 20px; padding-top: 8px;">-</div>
+                        <div class="value value--text" id="topDepartment">-</div>
                     </div>
-                    <div class="card" style="grid-column: span 2;">
-                        <h3>Проблемная зона (Низший балл)</h3>
-                        <div class="value" id="problemArea" style="font-size: 20px; color: #E21A1A; padding-top: 8px;">-</div>
+                    <div class="card">
+                        <h3>Проблемная зона (низший балл)</h3>
+                        <div class="value value--text value--bad" id="problemArea">-</div>
                     </div>
                 </div>
 
                 <div class="analytics-grid">
                     <div class="card">
                         <h3>Динамика удовлетворенности</h3>
-                        <div class="chart-container">
-                            <canvas id="trendChart"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="trendChart" aria-label="График динамики среднего балла" role="img"></canvas></div>
                     </div>
                     <div class="card">
-                        <h3>Оценка по категориям</h3>
-                        <div class="chart-container">
-                            <canvas id="radarChart"></canvas>
-                        </div>
+                        <h3>Оценка по факторам</h3>
+                        <div class="chart-container"><canvas id="radarChart" aria-label="Радар средних оценок по факторам" role="img"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -94,19 +102,25 @@
             <div id="view-employees" class="view-section">
                 <header class="header">
                     <h1>Результаты сотрудников</h1>
+                    <div class="search">
+                        <label for="employeeSearch" class="sr-only">Поиск по ФИО или подразделению</label>
+                        <input type="search" id="employeeSearch" placeholder="Поиск по ФИО или подразделению" autocomplete="off">
+                    </div>
                 </header>
                 <div class="card">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ФИО сотрудника</th>
-                                <th>Подразделение</th>
-                                <th>Средний балл</th>
-                                <th>Дата прохождения</th>
-                            </tr>
-                        </thead>
-                        <tbody id="employeesTableBody"></tbody>
-                    </table>
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ФИО сотрудника</th>
+                                    <th scope="col">Подразделение</th>
+                                    <th scope="col">Средний балл</th>
+                                    <th scope="col">Дата прохождения</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeesTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </main>

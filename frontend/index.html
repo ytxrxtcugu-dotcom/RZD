@@ -2,26 +2,44 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#F4F2EE">
     <title>Доступные опросы | РЖД</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap">
+    <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header class="header">
-        <img src="images/RZDlogo.png" alt="РЖД" class="header-logo">
-        <div class="header-title">Центр опросов</div>
-        <button class="btn-ghost" id="logoutBtn">Выйти</button>
-    </header>
-    <main class="container">
-        <div class="survey-grid" id="surveyContainer">
-            <!-- Пример генерации карточки. В app.js этот блок создается динамически -->
-            <div class="survey-card">
-                <h3 class="survey-title">Удовлетворенность условиями труда</h3>
-                <p class="survey-desc">Пройдите ежеквартальный опрос для оценки качества рабочих мест и инфраструктуры.</p>
-                <button class="btn-action">Начать опрос</button>
+    <header class="app-header">
+        <div class="app-header__inner">
+            <div class="brand">
+                <img src="images/RZDlogo.png" alt="РЖД" class="header-logo">
+                <span class="header-title">Центр опросов</span>
+            </div>
+            <div class="header-actions">
+                <div class="user-chip" id="userChip" hidden>
+                    <span class="user-chip__avatar" id="userAvatar" aria-hidden="true"></span>
+                    <span class="user-chip__name" id="userName"></span>
+                </div>
+                <button type="button" class="btn-ghost" id="logoutBtn">Выйти</button>
             </div>
         </div>
+    </header>
+
+    <main class="container">
+        <section class="hero" id="hero" aria-labelledby="heroTitle">
+            <p class="eyebrow">ОАО «РЖД»</p>
+            <h1 class="hero__title" id="heroTitle">Здравствуйте</h1>
+            <p class="hero__sub" id="heroDept"></p>
+        </section>
+
+        <h2 class="sr-only">Доступные опросы</h2>
+        <div class="survey-grid" id="surveyContainer"></div>
+        <noscript>Для работы приложения необходим JavaScript.</noscript>
     </main>
+
     <script src="app.js"></script>
 </body>
 </html>
