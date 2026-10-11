@@ -9,10 +9,9 @@ const surveyFactors = [
 ];
 
 const ICONS = {
-    user: `<svg class="icon" style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
-    chevronRight: `<svg class="icon" style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/></svg>`,
-    arrowLeft: `<svg class="icon" style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>`,
-    checkCircle: `<svg class="icon" style="width:100%;height:100%" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 4L12 14.01l-3-3"/></svg>`
+    user: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+    arrowLeft: `<svg style="width:24px;height:24px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>`,
+    checkCircle: `<svg style="width:100%;height:100%" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 4L12 14.01l-3-3"/></svg>`
 };
 
 class SurveyApp {
@@ -23,7 +22,6 @@ class SurveyApp {
     }
 
     init() {
-        // Определяем, на какой мы странице по наличию элементов
         const loginForm = document.getElementById('loginForm');
         const surveyContainer = document.getElementById('surveyContainer');
 
@@ -35,7 +33,6 @@ class SurveyApp {
     }
 
     initLoginPage(loginForm) {
-        // Если пользователь уже авторизован, кидаем на главную
         if (sessionStorage.getItem('userLoggedIn') === 'true') {
             window.location.href = 'index.html';
             return;
@@ -43,19 +40,18 @@ class SurveyApp {
 
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const username = document.getElementById('username').value.trim();
+            const fullName = document.getElementById('fullName').value.trim();
+            const department = document.getElementById('department').value;
             
-            if (username) {
-                // Имитация авторизации
+            if (fullName && department) {
                 sessionStorage.setItem('userLoggedIn', 'true');
-                sessionStorage.setItem('userData', JSON.stringify({ fullName: username }));
-                window.location.href = 'index.html'; // Переход на главную
+                sessionStorage.setItem('userData', JSON.stringify({ fullName, department }));
+                window.location.href = 'index.html';
             }
         });
     }
 
     initMainPage() {
-        // Проверка авторизации
         if (sessionStorage.getItem('userLoggedIn') !== 'true') {
             window.location.href = 'login.html';
             return;
@@ -63,7 +59,6 @@ class SurveyApp {
 
         this.currentUser = JSON.parse(sessionStorage.getItem('userData'));
         
-        // Кнопка выхода
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
@@ -95,7 +90,7 @@ class SurveyApp {
             container.innerHTML = `
                 <div class="survey-card">
                     <h3 class="survey-title">Удовлетворенность условиями труда</h3>
-                    <p class="survey-desc">Пройдите ежеквартальный опрос для оценки качества рабочих мест и инфраструктуры.</p>
+                    <p class="survey-desc">Опрос состоит из 14 ключевых факторов оценки рабочих мест и инфраструктуры.</p>
                     <button class="btn-action" onclick="app.startSurvey()">Начать опрос</button>
                 </div>
             `;
@@ -106,7 +101,6 @@ class SurveyApp {
         const mainContainer = document.querySelector('main.container');
         if (!mainContainer) return;
 
-        // Генерируем премиальные карточки для каждого вопроса
         const factorsHTML = surveyFactors.map((factor, index) => `
             <div class="survey-card" style="margin-bottom: 20px; padding: 24px;">
                 <div style="font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #1A202C;">
@@ -126,7 +120,6 @@ class SurveyApp {
             </div>
         `).join('');
 
-        // Плавно заменяем контент страницы на опрос
         mainContainer.style.opacity = '0';
         
         setTimeout(() => {
@@ -140,7 +133,7 @@ class SurveyApp {
                 </div>
                 ${factorsHTML}
                 <div style="margin-top: 40px; text-align: left;">
-                    <button class="btn-action" onclick="app.completeSurvey()" style="padding: 16px 32px; font-size: 16px;">Отправить результаты</button>
+                    <button class="btn-action" onclick="app.completeSurvey()" style="padding: 16px 32px; font-size: 16px;">Закончить опрос</button>
                 </div>
             `;
             mainContainer.style.transition = 'opacity 0.3s ease';
@@ -156,9 +149,7 @@ class SurveyApp {
 
     updateRatingDisplay(index, value) {
         const display = document.getElementById(`rating-${index}`);
-        if (display) {
-            display.textContent = value;
-        }
+        if (display) display.textContent = value;
     }
 
     async completeSurvey() {
@@ -177,7 +168,6 @@ class SurveyApp {
             timestamp: new Date().toISOString()
         };
         
-        // Отправка на бэкенд
         try {
             const response = await fetch('http://212.113.99.102:3000/api/surveys', {
                 method: 'POST',
@@ -195,7 +185,7 @@ class SurveyApp {
                             ${ICONS.checkCircle}
                         </div>
                         <h2 style="color: #1A202C; margin-bottom: 16px; font-size: 24px;">Анкета успешно сохранена</h2>
-                        <p style="color: #718096; margin-bottom: 40px; font-size: 16px;">Благодарим за ваше время! Ваш средний балл: <strong style="color: #2D3748;">${results.averageScore}/10</strong></p>
+                        <p style="color: #718096; margin-bottom: 40px; font-size: 16px;">Сотрудник: <b>${this.currentUser.fullName}</b><br>Ваш средний балл: <strong style="color: #2D3748;">${results.averageScore}/10</strong></p>
                         <button class="btn-ghost" onclick="window.location.reload()" style="padding: 12px 24px;">Вернуться на главную</button>
                     </div>
                 `;
@@ -209,7 +199,6 @@ class SurveyApp {
     }
 }
 
-// Инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new SurveyApp();
 });

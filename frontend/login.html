@@ -11,16 +11,26 @@
         <img src="images/RZDlogo.png" alt="РЖД Логотип" class="logo-img">
         <form id="loginForm">
             <div class="input-group">
-                <label for="username">Табельный номер</label>
-                <input type="text" id="username" required placeholder="Введите логин">
+                <label for="fullName">ФИО сотрудника</label>
+                <input type="text" id="fullName" required placeholder="Иванов Иван Иванович">
             </div>
             <div class="input-group">
-                <label for="password">Пароль</label>
-                <input type="password" id="password" required placeholder="Введите пароль">
+                <label for="department">Предприятие / Подразделение</label>
+                <select id="department" required>
+                    <option value="" disabled selected>Выберите из списка...</option>
+                    <option value="Дирекция тяги">Дирекция тяги</option>
+                    <option value="Дирекция инфраструктуры">Дирекция инфраструктуры</option>
+                    <option value="Аппарат управления">Аппарат управления</option>
+                    <option value="Федеральная пассажирская компания">Федеральная пассажирская компания</option>
+                </select>
             </div>
-            <button type="submit" class="btn-submit">Войти в систему</button>
+            <button type="submit" class="btn-submit">Войти к тестам</button>
         </form>
+        
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(0,0,0,0.1);">
+            <a href="admin.html" class="btn-admin-link">Вход для администратора</a>
+        </div>
     </div>
-    <script src="login.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

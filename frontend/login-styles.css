@@ -1,57 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Добавить в конец файла login-styles.css */
 
-:root { 
-    --primary: #E21A1A; 
-    --surface: rgba(255, 255, 255, 0.85); 
-    --text-main: #2D3748;
-    --text-muted: #718096;
-}
-
-body { 
-    margin: 0; 
-    padding: 0; 
-    font-family: 'Inter', sans-serif; 
-    background: linear-gradient(135deg, #E2E8F0 0%, #FFFFFF 100%); 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    height: 100vh; 
-}
-
-.login-wrapper { 
-    background: var(--surface); 
-    padding: 48px; 
-    border-radius: 24px; 
-    box-shadow: 0 20px 40px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03); 
-    backdrop-filter: blur(20px); 
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.6); 
-    width: 100%; 
-    max-width: 400px; 
-    text-align: center; 
-}
-
-.logo-img { 
-    max-width: 160px; 
-    margin-bottom: 40px; 
-}
-
-.input-group { 
-    margin-bottom: 24px; 
-    text-align: left; 
-}
-
-.input-group label { 
-    display: block; 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: var(--text-muted); 
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px; 
-}
-
-.input-group input { 
+.input-group select { 
     width: 100%; 
     padding: 16px; 
     border-radius: 12px; 
@@ -61,30 +10,32 @@ body {
     color: var(--text-main);
     transition: all 0.3s ease; 
     box-sizing: border-box; 
+    appearance: none;
+    cursor: pointer;
 }
 
-.input-group input:focus { 
+.input-group select:focus { 
     border-color: var(--primary); 
     outline: none; 
     box-shadow: 0 0 0 4px rgba(226, 26, 26, 0.1); 
     background: #FFFFFF; 
 }
 
-.btn-submit { 
-    width: 100%; 
-    background: var(--primary); 
-    color: #FFFFFF; 
-    border: none; 
-    padding: 16px; 
-    border-radius: 12px; 
-    font-size: 16px; 
-    font-weight: 600; 
-    cursor: pointer; 
-    transition: all 0.2s ease; 
-    margin-top: 8px;
+.btn-admin-link {
+    display: inline-block;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid #CBD5E0;
+    transition: all 0.2s ease;
 }
 
-.btn-submit:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 8px 20px rgba(226, 26, 26, 0.25); 
+.btn-admin-link:hover {
+    background: #EDF2F7;
+    color: var(--text-main);
+    border-color: #A0AEC0;
 }
